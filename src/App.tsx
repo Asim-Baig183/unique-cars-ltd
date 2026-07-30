@@ -18,6 +18,9 @@ import TextUs from "./pages/TextUsPage";
 import GlobalChatWidget from './components/Chat/GlobalChatWidget'; 
 import CarDetails from "./pages/CarDetails";
 
+// 1. Admin Component Import (agar default export hai to import AdminInventory, aksar named export hota hai)
+import { AddCarForm } from "./components/Admin/iInventory";; // Adjust name according to export in inventory.tsx
+
 function App() {
   return (
     <Router>
@@ -42,12 +45,14 @@ function App() {
           {/* Dynamic Car Details Route */}
           <Route path="/CarDetails" element={<CarDetails />} />
           <Route path="/CarDetails/:id" element={<CarDetails />} />
+
+          {/* 2. Admin Inventory Portal Route */}
+          <Route path="/admin/inventory" element={<AddCarForm />} />
         </Routes>
         
         <Footer />
         <CopyrightBar />
         
-        {/* Yahan se onClick prop hata diya hai */}
         <GlobalChatWidget />
       </div>
     </Router>

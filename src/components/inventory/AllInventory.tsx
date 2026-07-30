@@ -1,10 +1,31 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Grid, List } from 'lucide-react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { CAR_MAKES,  YEARS } from '../../constants/Car-Makes';
-import {CAR_MODELS} from '../../constants/Car-Model'
-import { mockVehicles } from '../../data/vehicles';
+import { supabase } from '../../supabaseClient'; // Make sure path is correct
+import { CAR_MAKES, YEARS } from '../../constants/Car-Makes';
+import { CAR_MODELS } from '../../constants/Car-Model';
+
+// Vehicle Type definition strictly based on database structure
+interface Vehicle {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  mileage?: number;
+  odometer?: string;
+  transmission?: string;
+  fuel_type?: string;
+  description?: string;
+  images?: string[];
+  image?: string;
+  bodyStyle?: string;
+  color?: string;
+  stock?: string;
+  engine?: string;
+  title?: string;
+}
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -24,6 +45,8 @@ const cardVariants: Variants = {
 };
 
 export const AllInventory: React.FC = () => {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
 
@@ -33,6 +56,41 @@ export const AllInventory: React.FC = () => {
   const [minYear, setMinYear] = useState<string>('');
   const [maxYear, setMaxYear] = useState<string>('');
   const [keyword, setKeyword] = useState<string>('');
+
+  // 1. Fetch Cars from Supabase DB on Component Mount
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('cars')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Fallback property mapping for compatibility
+        const mappedData: Vehicle[] = (data || []).map((car: any) => ({
+          ...car,
+          title: car.title || `${car.year} ${car.make} ${car.model}`,
+          image: car.images && car.images.length > 0 ? car.images[0] : 'https://via.placeholder.com/600x400?text=No+Image',
+          odometer: car.odometer || (car.mileage ? `${car.mileage.toLocaleString()} mi` : 'N/A'),
+          color: car.color || car.fuel_type || 'N/A',
+          bodyStyle: car.bodyStyle || 'SUV/Sedan',
+          stock: car.stock || car.id.substring(0, 6).toUpperCase(),
+          engine: car.engine || 'Standard'
+        }));
+
+        setVehicles(mappedData);
+      } catch (err: any) {
+        console.error('Error fetching inventory from Supabase:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, []);
 
   const handleMakeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedMake(e.target.value);
@@ -55,15 +113,15 @@ export const AllInventory: React.FC = () => {
 
   const availableModels = selectedMake ? CAR_MODELS[selectedMake] || [] : [];
 
-  // FILTER LOGIC FOR KEYWORD & DROPDOWNS
+  // 2. Dynamic Filtering on Live Supabase Vehicles Data
   const filteredVehicles = useMemo(() => {
-    return mockVehicles.filter((car) => {
+    return vehicles.filter((car) => {
       // Make Filter
-      if (selectedMake && car.make.toLowerCase() !== selectedMake.toLowerCase()) {
+      if (selectedMake && car.make?.toLowerCase() !== selectedMake.toLowerCase()) {
         return false;
       }
       // Model Filter
-      if (selectedModel && car.model.toLowerCase() !== selectedModel.toLowerCase()) {
+      if (selectedModel && car.model?.toLowerCase() !== selectedModel.toLowerCase()) {
         return false;
       }
       // Min Year Filter
@@ -74,14 +132,14 @@ export const AllInventory: React.FC = () => {
       if (maxYear && car.year > parseInt(maxYear, 10)) {
         return false;
       }
-      // Keyword Filter (Checks title, body style, color, stock, engine)
+      // Keyword Filter
       if (keyword.trim() !== '') {
         const query = keyword.toLowerCase().trim();
-        const matchesTitle = car.title.toLowerCase().includes(query);
-        const matchesBody = car.bodyStyle.toLowerCase().includes(query);
-        const matchesColor = car.color.toLowerCase().includes(query);
-        const matchesStock = car.stock.toLowerCase().includes(query);
-        const matchesEngine = car.engine.toLowerCase().includes(query);
+        const matchesTitle = car.title?.toLowerCase().includes(query) || false;
+        const matchesBody = car.bodyStyle?.toLowerCase().includes(query) || false;
+        const matchesColor = car.color?.toLowerCase().includes(query) || false;
+        const matchesStock = car.stock?.toLowerCase().includes(query) || false;
+        const matchesEngine = car.engine?.toLowerCase().includes(query) || false;
 
         if (!matchesTitle && !matchesBody && !matchesColor && !matchesStock && !matchesEngine) {
           return false;
@@ -90,7 +148,7 @@ export const AllInventory: React.FC = () => {
 
       return true;
     });
-  }, [selectedMake, selectedModel, minYear, maxYear, keyword]);
+  }, [vehicles, selectedMake, selectedModel, minYear, maxYear, keyword]);
 
   return (
     <div className="w-full bg-black min-h-screen py-6 px-4 md:px-8">
@@ -183,8 +241,12 @@ export const AllInventory: React.FC = () => {
           </div>
         </div>
 
-        {/* Cars Listing */}
-        {filteredVehicles.length === 0 ? (
+        {/* Loader or Cars Listing */}
+        {loading ? (
+          <div className="text-center text-[#e3ba73] py-20 text-lg animate-pulse font-semibold">
+            Fetching Live Inventory from Database...
+          </div>
+        ) : filteredVehicles.length === 0 ? (
           <div className="text-center text-white py-12 text-lg">
             No vehicles match your search criteria.
           </div>
@@ -206,9 +268,12 @@ export const AllInventory: React.FC = () => {
                 >
                   <div>
                     <div className="relative group overflow-hidden aspect-4/3">
-                      <img src={car.image} alt={car.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <img 
+                        src={car.image} 
+                        alt={car.title} 
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                      />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        {/* DYNAMIC VIEW DETAILS LINK */}
                         <Link
                           to={`/CarDetails/${car.id}`}
                           className="bg-[#e3ba73] text-black font-semibold text-xs md:text-sm px-4 py-2 rounded hover:bg-[#cdaf63] transition-colors"
@@ -230,18 +295,17 @@ export const AllInventory: React.FC = () => {
                     </div>
 
                     <div className="p-3">
-                      {/* Dynamic Title Link */}
                       <Link to={`/CarDetails/${car.id}`} className="text-white font-bold text-base hover:text-[#e3ba73] transition-colors block mb-1">
                         {car.title}
                       </Link>
 
                       <div className="flex justify-between items-end pb-2 border-b border-gray-200/20 text-xs md:text-sm">
-                        <p className="text-[#e3ba73] font-bold">Price: ${car.price}</p>
+                        <p className="text-[#e3ba73] font-bold">Price: ${car.price?.toLocaleString()}</p>
                         <p className="text-gray-300">Odometer: {car.odometer}</p>
                       </div>
 
                       <div className="text-xs text-gray-300 space-y-1 mt-2">
-                        <div className="flex justify-between border-b border-gray-800 pb-0.5"><span>Exterior Color</span><span>{car.color}</span></div>
+                        <div className="flex justify-between border-b border-gray-800 pb-0.5"><span>Fuel / Color</span><span>{car.color}</span></div>
                         <div className="flex justify-between border-b border-gray-800 pb-0.5"><span>Stock #</span><span>{car.stock}</span></div>
                         <div className="flex justify-between border-b border-gray-800 pb-0.5"><span>Body Style</span><span>{car.bodyStyle}</span></div>
                         <div className="flex justify-between border-b border-gray-800 pb-0.5"><span>Transmission</span><span>{car.transmission}</span></div>
