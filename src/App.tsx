@@ -19,7 +19,7 @@ import GlobalChatWidget from './components/Chat/GlobalChatWidget';
 import CarDetails from "./pages/CarDetails";
 
 // 1. Admin Component Import (agar default export hai to import AdminInventory, aksar named export hota hai)
-import { AddCarForm } from "./components/Admin/iInventory";; // Adjust name according to export in inventory.tsx
+import { AddCarForm } from "./components/Admin/inventory";; // Adjust name according to export in inventory.tsx
 
 function App() {
   return (
