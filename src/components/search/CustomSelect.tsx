@@ -6,6 +6,7 @@ interface CustomSelectProps {
   placeholder: string;
   value: string;
   options?: SelectOption[];
+  disabled?: boolean; // <-- Added disabled prop
   onChange: (value: string) => void;
 }
 
@@ -13,12 +14,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder,
   value,
   options = [],
+  disabled = false, // <-- Default set to false
   onChange,
 }) => {
   return (
-    <div className="relative w-full">
-      <div className="relative flex items-center justify-between w-full bg-white border border-gray-300 
-      rounded-sm px-3 py-2 text-sm cursor-pointer focus-within:ring-2 focus-within:ring-amber-500">
+    <div className={`relative w-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+      <div className={`relative flex items-center justify-between w-full bg-white border border-gray-300 
+      rounded-sm px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-amber-500 ${disabled ? 'pointer-events-none' : 'cursor-pointer'}`}>
         <span className={value ? 'text-gray-900 font-medium' : 'text-gray-400 font-normal uppercase'}>
           {options.find((opt) => opt.value === value)?.label || placeholder}
         </span>
@@ -26,8 +28,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
         <select
           value={value}
+          disabled={disabled} // <-- Passed to HTML select tag
           onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 text-black w-full h-full opacity-0 cursor-pointer"
+          className="absolute inset-0 text-black w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         >
           <option value="">{placeholder}</option>
           {options.map((option) => (

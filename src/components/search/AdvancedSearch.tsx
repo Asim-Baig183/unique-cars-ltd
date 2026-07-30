@@ -3,7 +3,7 @@ import { FaSearch } from "react-icons/fa";
 import { CustomSelect } from './CustomSelect';
 import { type SearchFilterState } from './types';
 import { CAR_MAKES } from '../../constants/Car-Makes';
-import {CAR_MODELS , YEARS} from "../../constants/Car-Model";
+import { CAR_MODELS, YEARS } from "../../constants/Car-Model";
 
 export const AdvancedSearch: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilterState>({
@@ -15,7 +15,6 @@ export const AdvancedSearch: React.FC = () => {
 
   const handleChange = (key: keyof SearchFilterState, value: string) => {
     setFilters((prev) => {
-      // Agar 'make' change ho raha hai, to 'model' ko reset kar do
       if (key === 'make') {
         return {
           ...prev,
@@ -27,16 +26,21 @@ export const AdvancedSearch: React.FC = () => {
     });
   };
 
-  // Selected Make ke dynamic models determine karein
+  // Selected Make ke dynamic models get karein
   const currentModels = filters.make ? CAR_MODELS[filters.make] || [] : [];
 
-  const queryString = new URLSearchParams(filters).toString();
+  const queryString = new URLSearchParams(
+    Object.entries(filters).reduce((acc, [key, val]) => {
+      if (val) acc[key] = val;
+      return acc;
+    }, {} as Record<string, string>)
+  ).toString();
 
   return (
     <div className="w-full h-36 bg-[#222] p-2 md:p-3 lg:p-5 flex justify-center items-center">
       <div className="w-full max-w-7xl flex flex-col lg:flex-row justify-center items-center gap-2">
         <div className="w-full lg:w-10/12">
-          {/* Main 4-column layout for tablet/desktop */}
+          {/* Main 4-column layout */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             <CustomSelect
               placeholder="ANY MAKE"
@@ -69,7 +73,7 @@ export const AdvancedSearch: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile layout for years */}
+          {/* Mobile layout */}
           <div className="grid grid-cols-2 gap-2 mt-2 sm:hidden">
             <CustomSelect
               placeholder="MIN YEAR"

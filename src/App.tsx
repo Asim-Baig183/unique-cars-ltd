@@ -1,4 +1,3 @@
-// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScrollToTop from "./components/cta/ScrollToTop";
 
@@ -16,14 +15,10 @@ import AboutUs from "./pages/AboutUs";
 import ContactUs from "./pages/ContactUsPage";
 import Directions from "./pages/Directions";
 import TextUs from "./pages/TextUsPage";
-import OnlineChatButton from './components/Chat/GlobalChatWidget'; 
+import GlobalChatWidget from './components/Chat/GlobalChatWidget'; 
 import CarDetails from "./pages/CarDetails";
 
 function App() {
-  const handleChatClick = () => {
-    console.log("Chat button clicked!");
-  };
-
   return (
     <Router>
       <ScrollToTop />
@@ -44,14 +39,16 @@ function App() {
           <Route path="/Directions" element={<Directions />} />
           <Route path="/TextUs" element={<TextUs />} />
           
-          {/* Dynamic Car Details Route added with optional ID (:id?) */}
+          {/* Dynamic Car Details Route */}
           <Route path="/CarDetails" element={<CarDetails />} />
           <Route path="/CarDetails/:id" element={<CarDetails />} />
         </Routes>
         
         <Footer />
         <CopyrightBar />
-        <OnlineChatButton onClick={handleChatClick} />
+        
+        {/* Yahan se onClick prop hata diya hai */}
+        <GlobalChatWidget />
       </div>
     </Router>
   );
