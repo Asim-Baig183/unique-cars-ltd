@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import ImgBanner from '../components/Finance-Calculator/img-banner';
 import FinanceCalculator from '../components/Finance-Calculator/Calculator';
