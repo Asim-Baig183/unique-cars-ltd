@@ -1,9 +1,114 @@
-import React from 'react';
-import { Phone, MapPin, Clock } from 'lucide-react';
+// src/components/ContactUsSection.tsx
+
+import React, { useState, useEffect } from 'react';
+import { Phone, MapPin, Clock, CheckCircle, XCircle, X } from 'lucide-react';
+import { sendContactEmail,type ContactFormData } from '../../services/emailService';
 
 export const ContactUsSection: React.FC = () => {
+  // 1. Form State Management
+  const [formData, setFormData] = useState<ContactFormData>({
+    f_name: '',
+    l_name: '',
+    email: '',
+    mobile: '',
+    frk_midv_id: '',
+    message: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error' | null; msg: string }>({
+    type: null,
+    msg: '',
+  });
+
+  // 2. Auto-hide Notification Banner after 5 Seconds
+  useEffect(() => {
+    if (status.type) {
+      const timer = setTimeout(() => {
+        setStatus({ type: null, msg: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
+  // 3. Input Change Handler
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  // 4. Form Submit Handler
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus({ type: null, msg: '' });
+
+    const result = await sendContactEmail(formData);
+    setLoading(false);
+
+    if (result.success) {
+      setStatus({
+        type: 'success',
+        msg: 'Thank you! Your message has been sent successfully.',
+      });
+      // Form Clear
+      setFormData({
+        f_name: '',
+        l_name: '',
+        email: '',
+        mobile: '',
+        frk_midv_id: '',
+        message: '',
+      });
+    } else {
+      setStatus({
+        type: 'error',
+        msg: 'Failed to send message. Please try again.',
+      });
+    }
+  };
+
   return (
-    <div className="p-0 m-0 w-full bg-black">
+    <div className="p-0 m-0 w-full bg-black relative overflow-x-hidden">
+
+      {/* 🌟 Animated Top Floating Toast Banner */}
+      <div
+        className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md transition-all duration-500 ease-out transform ${
+          status.type
+            ? 'translate-y-0 opacity-100 scale-100'
+            : '-translate-y-12 opacity-0 scale-95 pointer-events-none'
+        }`}
+      >
+        {status.type && (
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl shadow-2xl backdrop-blur-md border ${
+              status.type === 'success'
+                ? 'bg-slate-900/95 border-emerald-500/50 text-emerald-400 shadow-emerald-950/50'
+                : 'bg-slate-900/95 border-red-500/50 text-red-400 shadow-red-950/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {status.type === 'success' ? (
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 animate-bounce" />
+              ) : (
+                <XCircle className="w-6 h-6 text-red-400 shrink-0" />
+              )}
+              <span className="text-sm font-medium text-white">{status.msg}</span>
+            </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setStatus({ type: null, msg: '' })}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="p-0 m-0 w-full flex justify-center">
         <div className="w-full lg:w-[83.333%] p-0 m-0 px-3 flex flex-wrap">
           
@@ -26,11 +131,11 @@ export const ContactUsSection: React.FC = () => {
               <p className="text-[23px] text-white font-sans">
                 Get In Touch With Us
               </p>
-              <p className="w-full p-0 m-0 text-[13px] text-gray-300 font-sans uppercase">
+              <p className="w-full p-0 m-0 text-[13px] text-gray-300 font-sans uppercase mb-4">
                 PHONE, EMAIL OR IN PERSON- HERE'S HOW TO REACH US
               </p>
 
-              <form className="p-0 m-0 flex flex-wrap" onSubmit={(e) => e.preventDefault()}>
+              <form className="p-0 m-0 flex flex-wrap" onSubmit={handleSubmit}>
                 <div className="p-0 m-0 w-full">
                   <div className="p-0 m-0 flex flex-wrap">
                     
@@ -41,6 +146,9 @@ export const ContactUsSection: React.FC = () => {
                         type="text"
                         id="f_name"
                         name="f_name"
+                        required
+                        value={formData.f_name}
+                        onChange={handleChange}
                         className="w-full bg-[#121212] text-white border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-[#e3ba73]"
                       />
                     </div>
@@ -52,6 +160,9 @@ export const ContactUsSection: React.FC = () => {
                         type="text"
                         id="l_name"
                         name="l_name"
+                        required
+                        value={formData.l_name}
+                        onChange={handleChange}
                         className="w-full bg-[#121212] text-white border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-[#e3ba73]"
                       />
                     </div>
@@ -60,9 +171,12 @@ export const ContactUsSection: React.FC = () => {
                     <div className="p-1 m-0 w-full md:w-[75%] flex flex-col">
                       <label className="text-white text-sm mb-1">Email (required)</label>
                       <input
-                        type="text"
+                        type="email"
                         id="email"
                         name="email"
+                        required
+                        value={formData.email}
+                        onChange={handleChange}
                         className="w-full bg-[#121212] text-white border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-[#e3ba73]"
                       />
                     </div>
@@ -71,9 +185,12 @@ export const ContactUsSection: React.FC = () => {
                     <div className="p-1 m-0 w-full md:w-[75%] flex flex-col">
                       <label className="text-white text-sm mb-1">Phone (required)</label>
                       <input
-                        type="text"
+                        type="tel"
                         id="mobile"
                         name="mobile"
+                        required
+                        value={formData.mobile}
+                        onChange={handleChange}
                         className="w-full bg-[#121212] text-white border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-[#e3ba73]"
                       />
                     </div>
@@ -84,6 +201,8 @@ export const ContactUsSection: React.FC = () => {
                         <div className="p-0 m-0 mt-2 mb-2 relative">
                           <input
                             name="frk_midv_id"
+                            value={formData.frk_midv_id}
+                            onChange={handleChange}
                             className="w-full bg-[#121212] text-white border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-[#e3ba73]"
                             placeholder="Search (Year Make Model)"
                           />
@@ -94,6 +213,9 @@ export const ContactUsSection: React.FC = () => {
                         id="message"
                         name="message"
                         rows={4}
+                        required
+                        value={formData.message}
+                        onChange={handleChange}
                         className="w-full bg-[#121212] text-white border border-gray-700 rounded px-3 py-2 focus:outline-none focus:border-[#e3ba73] resize-none"
                       ></textarea>
                     </div>
@@ -103,9 +225,10 @@ export const ContactUsSection: React.FC = () => {
                       <div className="p-0 m-0 w-1/2">
                         <button
                           type="submit"
-                          className="w-[75%] bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-semibold py-2 px-4 rounded transition-colors"
+                          disabled={loading}
+                          className="w-[75%] bg-[#e3ba73] hover:bg-[#cdaf63] disabled:opacity-50 text-black font-semibold py-2 px-4 rounded transition-colors flex items-center justify-center gap-2"
                         >
-                          Send
+                          {loading ? 'Sending...' : 'Send'}
                         </button>
                       </div>
                     </div>

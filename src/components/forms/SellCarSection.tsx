@@ -48,33 +48,33 @@ export const SellCarSection: React.FC = () => {
 
   return (
     <section 
-      className="relative w-full bg-cover bg-center bg-no-repeat min-h-162.5 flex justify-between items-center py-16 px- lg:px-20"
+      className="relative w-full bg-cover bg-center bg-no-repeat min-h-125 flex justify-between items-center py-12 px-4 sm:px-8 lg:px-20"
       style={{ backgroundImage: "url('https://uniquecars.ca/images/contactus.jpg')" }}
     >
-      {/* Halka sa Black Overlay (30% Opacity) */}
-      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+      {/* Black Overlay (30% Opacity) */}
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
 
       {/* Main Container */}
-      <div className="relative z-10 max-w-7xl  w-full grid grid-cols-1  lg:grid-cols-12 gap-x-28 ">
+      <div className="relative z-10 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-y-8 gap-x-12 xl:gap-x-20 items-start">
         
         {/* Left Headline Section */}
-        <div className="lg:col-span-5 space-y-4">
-          <h1 className="text-2xl lg:text-[40px] tracking-wide  text-white uppercase drop-shadow-md pt-12">
+        <div className="lg:col-span-5 space-y-3 text-center lg:text-left mt-20">
+          <h1 className="text-3xl sm:text-4xl lg:text-[40px] tracking-wide text-white uppercase drop-shadow-md pt-4 lg:pt-0 font-light">
             SELL US YOUR CAR
           </h1>
-          <p className="text-lg lg:text-xl text-gray-200 font-normal leading-relaxed max-w-md drop-shadow-md">
+          <p className="text-base sm:text-lg lg:text-xl text-gray-200 font-normal leading-relaxed max-w-md mx-auto lg:mx-0 drop-shadow-md">
             We will buy your cars even if you don't buy from us!
           </p>
         </div>
 
         {/* Right Form Section */}
-        <div className="lg:col-span-7 ">
-          <form onSubmit={handleSubmit}>
-            {/* 2-Column Inputs Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-[0.5px] gap-y-2">
+        <div className="lg:col-span-7 w-full">
+          <form onSubmit={handleSubmit} className="w-full">
+            {/* Responsive Inputs Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-x-6 sm:gap-y-4">
               
               {/* First Name */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="firstName" className="text-sm text-gray-200 font-normal">
                   First Name
                 </label>
@@ -85,12 +85,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.firstName}
                   onChange={handleChange}
                   required
-                 className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)] "
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Last Name */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="lastName" className="text-sm text-gray-200 font-normal">
                   Last Name
                 </label>
@@ -101,12 +101,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.lastName}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Email */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="email" className="text-sm text-gray-200 font-normal">
                   Email
                 </label>
@@ -117,12 +117,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Mobile */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="mobile" className="text-sm text-gray-200 font-normal">
                   Mobile
                 </label>
@@ -133,12 +133,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.mobile}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Make */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="make" className="text-sm text-gray-200 font-normal">
                   Make
                 </label>
@@ -149,12 +149,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.make}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Model */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="model" className="text-sm text-gray-200 font-normal">
                   Model
                 </label>
@@ -165,12 +165,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.model}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Year */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="year" className="text-sm text-gray-200 font-normal">
                   Year
                 </label>
@@ -181,12 +181,12 @@ export const SellCarSection: React.FC = () => {
                   value={formData.year}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Vin Number */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full">
                 <label htmlFor="vinNumber" className="text-sm text-gray-200 font-normal">
                   Vin Number
                 </label>
@@ -196,12 +196,12 @@ export const SellCarSection: React.FC = () => {
                   name="vinNumber"
                   value={formData.vinNumber}
                   onChange={handleChange}
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
 
               {/* Mileage */}
-              <div className="flex flex-col space-y-1.5">
+              <div className="flex flex-col space-y-1.5 w-full sm:col-span-2 lg:col-span-1">
                 <label htmlFor="mileage" className="text-sm text-gray-200 font-normal">
                   Mileage
                 </label>
@@ -213,23 +213,24 @@ export const SellCarSection: React.FC = () => {
                   value={formData.mileage}
                   onChange={handleChange}
                   required
-                  className="w-52.5 bg-[#222226] text-white px-3 py-2 rounded-none border-none focus:outline-none shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
+                  className="w-full bg-[#222226] text-white px-3.5 py-2.5 rounded-none border-none focus:outline-none focus:ring-1 focus:ring-[#e3ba73] shadow-[0_4px_10px_rgba(0,0,0,0.6)]"
                 />
               </div>
             </div>
 
             {/* Outlined Submit Button */}
-            <div className="pt-6">
+            <div className="pt-6 text-center lg:text-left">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="sm:w-[30%] py-3 bg-black border border-[#e3ba73]  text-[#e3ba73] hover:text-black hover:bg-[#e3ba73]  font-medium tracking-wide rounded-none transition-colors duration-200 cursor-pointer disabled:opacity-50"
+                className="w-full sm:w-auto px-10 py-3 bg-black border border-[#e3ba73] text-[#e3ba73] hover:text-black hover:bg-[#e3ba73] font-medium tracking-wider uppercase text-sm rounded-none transition-all duration-200 cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit'}
               </button>
             </div>
           </form>
         </div>
+
       </div>
     </section>
   );

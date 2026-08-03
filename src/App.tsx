@@ -16,11 +16,11 @@ import ContactUs from "./pages/ContactUsPage";
 import Directions from "./pages/Directions";
 import TextUs from "./pages/TextUsPage";
 import GlobalChatWidget from './components/Chat/GlobalChatWidget'; 
-import CarDetails from "./pages/CarDetails";
+import CarDetails from "./pages/CarsDetails";
 
 // 1. Admin Component Import (agar default export hai to import AdminInventory, aksar named export hota hai)
 import { AddCarForm } from "./components/Admin/inventory";; // Adjust name according to export in inventory.tsx
-
+import  VinDecoderTool  from './components/VinDecoderTool';
 function App() {
   return (
     <Router>
@@ -41,7 +41,8 @@ function App() {
           <Route path="/ContactUs" element={<ContactUs />} />
           <Route path="/Directions" element={<Directions />} />
           <Route path="/TextUs" element={<TextUs />} />
-          
+          <Route path="/VDT" element={< VinDecoderTool/>} />
+
           {/* Dynamic Car Details Route */}
           <Route path="/CarDetails" element={<CarDetails />} />
           <Route path="/CarDetails/:id" element={<CarDetails />} />
