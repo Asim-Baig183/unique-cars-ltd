@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Phone, MapPin, Clock } from 'lucide-react';
+import { sendTextEmail } from '../../formSubmit/textEmailSevice';
 
 export const TextForm: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -12,16 +13,69 @@ export const TextForm: React.FC = () => {
     message: '',
   });
 
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error' | null; msg: string }>({
+    type: null,
+    msg: '',
+  });
+
+  // Auto-hide Notification Banner after 5 Seconds
+  useEffect(() => {
+    if (status.type) {
+      const timer = setTimeout(() => {
+        setStatus({ type: null, msg: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
+  // Input Change Handler
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Form Submit Handler
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Form submission logic
-    console.log('Form Submitted:', formData);
+    setLoading(true);
+    setStatus({ type: null, msg: '' });
+
+    try {
+      const result = await sendTextEmail(formData);
+      setLoading(false);
+
+      if (result.success) {
+        setStatus({
+          type: 'success',
+          msg: 'Thank you! Your message has been sent successfully.',
+        });
+        // Form Clear
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          searchVehicle: '',
+          message: '',
+        });
+      } else {
+        setStatus({
+          type: 'error',
+          msg: result.message || 'Failed to send message. Please try again.',
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      setStatus({
+        type: 'error',
+        msg: 'Failed to send message. Please try again.',
+      });
+    }
   };
 
   return (
@@ -40,6 +94,19 @@ export const TextForm: React.FC = () => {
             <h2 className="text-2xl font-bold text-[#e6e6e6] mb-2 font-sans">
               Text Us Now
             </h2>
+
+            {/* Notification Banner */}
+            {status.type && (
+              <div
+                className={`p-3 rounded text-sm text-center font-medium ${
+                  status.type === 'success'
+                    ? 'bg-green-600/20 text-green-400 border border-green-500'
+                    : 'bg-red-600/20 text-red-400 border border-red-500'
+                }`}
+              >
+                {status.msg}
+              </div>
+            )}
 
             {/* Input Fields Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -130,9 +197,10 @@ export const TextForm: React.FC = () => {
             <div className="mt-2">
               <button
                 type="submit"
-                className="bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-semibold px-6 py-2 rounded text-sm transition-colors"
+                disabled={loading}
+                className="bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-semibold px-6 py-2 rounded text-sm transition-colors disabled:opacity-50"
               >
-                Send Text
+                {loading ? 'Sending...' : 'Send Text'}
               </button>
             </div>
 
