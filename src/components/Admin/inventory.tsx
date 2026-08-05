@@ -1,34 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { AdminLogin } from './AdminLogin';
-import { Trash2, PlusCircle, LogOut, Search, Loader2, Edit, XCircle, CheckCircle, X } from 'lucide-react';
-
-interface Car {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  mileage?: number;
-  stock_number?: string;
-  vin?: string;
-  body_style?: string;
-  transmission?: string;
-  engine?: string;
-  engine_size?: string;
-  driveline?: string;
-  exterior_color?: string;
-  interior_color?: string;
-  fuel_type?: string;
-  city_fuel?: string;
-  hwy_fuel?: string;
-  doors?: number;
-  passengers?: number;
-  features?: string[];
-  description?: string;
-  condition_tag?: string;
-  images: string[];
-}
+import { Trash2, PlusCircle, LogOut, Search, Loader2, Edit, XCircle, CheckCircle, X, Printer } from 'lucide-react';
+import { WindowStickerModal,type Car } from './WindowStickerModal';
 
 export const AddCarForm: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -38,8 +12,9 @@ export const AddCarForm: React.FC = () => {
   const [decodingVin, setDecodingVin] = useState(false);
   const [existingCars, setExistingCars] = useState<Car[]>([]);
   
-  // State for Editing
+  // State for Editing & Printing
   const [editingCarId, setEditingCarId] = useState<string | null>(null);
+  const [selectedCarForPrint, setSelectedCarForPrint] = useState<Car | null>(null);
 
   // State for VIN decoder lookup input
   const [vinInput, setVinInput] = useState('');
@@ -70,7 +45,7 @@ export const AddCarForm: React.FC = () => {
     description: '',
   });
 
-  // Image & Preview States inside Component
+  // Image & Preview States
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -109,7 +84,6 @@ export const AddCarForm: React.FC = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      
       const updatedFiles = [...selectedFiles, ...newFiles];
       setSelectedFiles(updatedFiles);
 
@@ -270,7 +244,6 @@ export const AddCarForm: React.FC = () => {
     try {
       let imageUrls: string[] = [...existingImages];
 
-      // Upload new selected files if available
       if (selectedFiles.length > 0) {
         const uploadedUrls: string[] = [];
         for (let i = 0; i < selectedFiles.length; i++) {
@@ -286,7 +259,6 @@ export const AddCarForm: React.FC = () => {
         imageUrls = [...imageUrls, ...uploadedUrls];
       }
 
-      // Convert comma-separated string back to array
       const featuresArray = typeof formData.features === 'string'
         ? formData.features.split(',').map((item) => item.trim()).filter((item) => item.length > 0)
         : formData.features;
@@ -520,7 +492,6 @@ export const AddCarForm: React.FC = () => {
                   />
                 </div>
 
-                {/* CONDITION TAG */}
                 <div>
                   <label className="block text-xs font-semibold text-[#e3ba73] mb-1">Condition Tag (Label Badge)</label>
                   <input
@@ -766,13 +737,9 @@ export const AddCarForm: React.FC = () => {
                           alt={`Preview ${index}`}
                           className="w-full h-full object-cover"
                         />
-
-                        {/* Status Tick Badge */}
                         <div className="absolute top-1.5 left-1.5 bg-emerald-500/90 text-white p-1 rounded-full shadow backdrop-blur-sm">
                           <CheckCircle className="w-3.5 h-3.5" />
                         </div>
-
-                        {/* Delete Cross Button */}
                         <button
                           type="button"
                           onClick={() => removeNewImage(index)}
@@ -781,7 +748,6 @@ export const AddCarForm: React.FC = () => {
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
-
                         <span className="absolute bottom-1 left-1.5 text-[10px] bg-black/70 text-gray-300 px-1.5 py-0.5 rounded">
                           Image #{index + 1}
                         </span>
@@ -835,7 +801,18 @@ export const AddCarForm: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
                 <div className="flex items-center gap-2 self-end sm:self-center">
+                  {/* PRINT WINDOW STICKER BUTTON */}
+                  <button
+                    onClick={() => setSelectedCarForPrint(car)}
+                    className="bg-gray-800 text-gray-200 hover:bg-[#e3ba73] hover:text-black p-2.5 rounded transition-colors flex items-center gap-1 text-xs font-semibold"
+                    title="Print Window Sticker"
+                  >
+                    <Printer className="w-4 h-4" /> Print Sticker
+                  </button>
+
+                  {/* EDIT BUTTON */}
                   <button
                     onClick={() => handleEditClick(car)}
                     className="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white p-2.5 rounded transition-colors flex items-center gap-1 text-xs font-semibold"
@@ -844,6 +821,7 @@ export const AddCarForm: React.FC = () => {
                     <Edit className="w-4 h-4" /> Edit
                   </button>
 
+                  {/* DELETE BUTTON */}
                   <button
                     onClick={() => handleDelete(car.id)}
                     className="bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white p-2.5 rounded transition-colors"
@@ -858,6 +836,12 @@ export const AddCarForm: React.FC = () => {
         </div>
 
       </div>
+
+      {/* 🖨️ PRINT MODAL SUB-COMPONENT IMPORT */}
+      <WindowStickerModal
+        car={selectedCarForPrint}
+        onClose={() => setSelectedCarForPrint(null)}
+      />
     </div>
   );
 };
