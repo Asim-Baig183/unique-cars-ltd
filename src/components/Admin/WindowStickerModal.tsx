@@ -84,13 +84,7 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
             </div>
 
             {/* Dynamic Auto QR Code */}
-            <div className="w-16 h-16 md:w-20 md:h-20 border border-gray-300 p-1 rounded bg-white">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://uniquecars.ca/inventory/${car.id}`}
-                alt="Vehicle QR Code"
-                className="w-full h-full object-contain"
-              />
-            </div>
+            
           </div>
 
           {/* Big Price Section */}

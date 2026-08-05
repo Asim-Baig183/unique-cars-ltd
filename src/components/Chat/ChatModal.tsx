@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Paperclip, Send, Smile } from 'lucide-react';
+import { X, Paperclip, Send, Smile, Loader2 } from 'lucide-react';
+import { supabase } from '../../supabaseClient'; // Adjust path if needed
 
 interface Message {
   id: string;
@@ -18,45 +19,102 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hi, Welcome to our website. How can we help you?',
-      timestamp: '20:50 PM',
+      text: 'Hi! Welcome to Unique Cars Ltd. How can we help you today? You can ask about our available inventory, financing, or dealership location.',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       sender: 'bot',
     },
   ]);
   const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new message
+  // Auto-scroll on new message
   useEffect(() => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  // Helper: Format Time
+  const getFormattedTime = () =>
+    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  // Bot Logic Engine (Fetches live DB data & answers)
+  const generateAutoReply = async (userQuery: string): Promise<string> => {
+    const query = userQuery.toLowerCase();
+
+    // 1. Inventory Query Handling
+    if (query.includes('car') || query.includes('inventory') || query.includes('stock') || query.includes('available')) {
+      try {
+        const { data: cars, error } = await supabase
+          .from('cars')
+          .select('year, make, model, price')
+          .limit(3);
+
+        if (error || !cars || cars.length === 0) {
+          return "We have a wide range of certified pre-owned cars in stock! Please visit our Inventory page to browse all available models.";
+        }
+
+        const carList = cars
+          .map((c) => `• ${c.year} ${c.make} ${c.model} - $${c.price?.toLocaleString()}`)
+          .join('\n');
+
+        return `Here are some of our latest available vehicles:\n\n${carList}\n\nWould you like more details on a specific car?`;
+      } catch (err) {
+        return "You can view our complete live inventory directly on our website under the Inventory section!";
+      }
+    }
+
+    // 2. Financing & Trade-in Queries
+    if (query.includes('finance') || query.includes('loan') || query.includes('trade')) {
+      return "Yes! We offer flexible financing options and trade-in valuations. You can apply for pre-approval directly through our online financing form.";
+    }
+
+    // 3. Location / Hours Queries
+    if (query.includes('location') || query.includes('address') || query.includes('where') || query.includes('time') || query.includes('open')) {
+      return "Unique Cars Ltd is located at our dealership showroom. Our team is available Monday through Saturday. Feel free to stop by for a test drive!";
+    }
+
+    // 4. Contact / Phone Queries
+    if (query.includes('contact') || query.includes('phone') || query.includes('call') || query.includes('email')) {
+      return "You can leave us a message right here, or submit a inquiry form on our contact page. Our sales representatives will reach out to you shortly!";
+    }
+
+    // Default Fallback Response
+    return "Thank you for reaching out to Unique Cars Ltd! A sales representative will review your message shortly. In the meantime, feel free to check our Inventory page for latest models and deals.";
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    const currentTime = new Date().toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    });
-
-    const newMessage: Message = {
+    const userMsgText = inputText.trim();
+    const userMsg: Message = {
       id: Date.now().toString(),
-      text: inputText.trim(),
-      timestamp: currentTime,
+      text: userMsgText,
+      timestamp: getFormattedTime(),
       sender: 'user',
     };
 
-    setMessages((prev) => [...prev, newMessage]);
+    setMessages((prev) => [...prev, userMsg]);
     setInputText('');
-  };
+    setIsTyping(true);
 
-  const handleFileClick = () => {
-    fileInputRef.current?.click();
+    // Simulate natural typing delay (1.2 seconds)
+    setTimeout(async () => {
+      const botResponseText = await generateAutoReply(userMsgText);
+      
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: botResponseText,
+        timestamp: getFormattedTime(),
+        sender: 'bot',
+      };
+
+      setMessages((prev) => [...prev, botMsg]);
+      setIsTyping(false);
+    }, 1200);
   };
 
   return (
@@ -101,13 +159,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                   className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-md ${
+                    className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-md ${
                       isUser
                         ? 'bg-[#e3ba73] text-black rounded-tr-none font-medium'
                         : 'bg-[#262626] text-gray-100 rounded-tl-none border border-gray-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap wrap-break-words">{msg.text}</p>
+                    <p className="whitespace-pre-wrap wrap-break">{msg.text}</p>
                     <span
                       className={`text-[10px] block mt-1 text-right ${
                         isUser ? 'text-gray-800' : 'text-gray-400'
@@ -119,6 +177,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                 </div>
               );
             })}
+
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div className="flex items-center gap-2 text-xs text-gray-400 bg-[#262626] px-3 py-2 rounded-xl rounded-tl-none w-fit border border-gray-800">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#e3ba73]" />
+                Unique Cars Agent is typing...
+              </div>
+            )}
           </section>
 
           {/* Footer Input Area */}
@@ -141,12 +207,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     handleSendMessage(e);
                   }
                 }}
-                placeholder="Type..."
+                placeholder="Ask about inventory, location..."
                 rows={1}
                 className="flex-1 bg-[#121212] text-white text-sm px-3 py-2 rounded-xl border border-gray-700 focus:outline-none focus:border-[#e3ba73] resize-none transition-colors"
               />
 
-              {/* Hidden File Input */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -156,7 +221,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 
               <button
                 type="button"
-                onClick={handleFileClick}
+                onClick={() => fileInputRef.current?.click()}
                 className="p-1.5 text-gray-400 hover:text-white transition-colors focus:outline-none"
                 title="Attach File"
               >
