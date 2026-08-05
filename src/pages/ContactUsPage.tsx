@@ -1,6 +1,6 @@
 import React from 'react';
 import { ImgBanner } from '../components/ContactUs/img-banner';
-import { ContactUsSection } from '../components/ContactUs/contact-form';
+import  {ContactUsSection}  from '../components/ContactUs/contact-form';
 
 export const TextUs: React.FC = () => {
   return (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaMapMarkerAlt, FaPhoneAlt, FaFacebookSquare, FaInstagram } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaPhoneAlt, FaFacebookSquare, FaInstagram,FaTiktok } from 'react-icons/fa';
 
 export const TopBar: React.FC = () => {
   return (
@@ -46,6 +46,15 @@ export const TopBar: React.FC = () => {
             className="text-white hover:text-[#e3ba73] transition-colors"
           >
             <FaInstagram size={17} />
+          </a>
+          <a
+            href="https://www.tiktok.com/@uniquecarsltd?is_from_webapp=1&sender_device=pc"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className="text-white hover:text-[#e3ba73] transition-colors"
+          >
+            <FaTiktok size={17} />
           </a>
         </div>
 

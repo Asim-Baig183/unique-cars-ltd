@@ -268,7 +268,7 @@ export const CalculatorSection: React.FC = () => {
             {/* Apply Button */}
             <div className="flex justify-center mt-6">
               <a
-                href="/forms/finance"
+                href="/CreditApplication"
                 className="bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-bold px-6 py-2.5 rounded transition-colors text-center text-sm"
               >
                 Apply For Financing

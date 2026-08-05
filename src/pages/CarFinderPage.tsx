@@ -1,29 +1,11 @@
-import React, { useState } from 'react';
-import { FaPhoneAlt, FaMapMarkerAlt, FaClock, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
-import { motion, AnimatePresence } from 'framer-motion';
-
-interface FormDataState {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  make: string;
-  model: string;
-  year: string;
-  trim: string;
-  temp_odometer: string;
-  bodyStyle: string;
-  transmission: string;
-  driveLine: string;
-  fuel_type: string;
-  condition: string;
-  vin_number: string;
-  exterior_color: string;
-  additional_info: string;
-}
+import React, { useState, useEffect } from 'react';
+import { FaPhoneAlt, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { CheckCircle, XCircle, X } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { sendCarFinderEmail, type CarFinderFormData } from '../formSubmit/carFinderEmailService';
 
 const CarFinder: React.FC = () => {
-  const [formData, setFormData] = useState<FormDataState>({
+  const [formData, setFormData] = useState<CarFinderFormData>({
     firstName: '',
     lastName: '',
     email: '',
@@ -43,12 +25,21 @@ const CarFinder: React.FC = () => {
     additional_info: ''
   });
 
-  const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({
-    show: false,
-    message: '',
-    type: 'success'
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error' | null; msg: string }>({
+    type: null,
+    msg: '',
   });
+
+  // Auto-hide notification banner after 5 seconds
+  useEffect(() => {
+    if (status.type) {
+      const timer = setTimeout(() => {
+        setStatus({ type: null, msg: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -57,98 +48,84 @@ const CarFinder: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 📧 WEB3FORMS SUBMISSION HANDLER
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
+    setLoading(true);
+    setStatus({ type: null, msg: '' });
 
-    try {
-      const response = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: {
-          'Content-[#e3ba73]': 'application/json',
-          'Content-Type': 'application/json',
-          Accept: 'application/json'
-        },
-        body: JSON.stringify({
-          access_key: 'YOUR_WEB3FORMS_ACCESS_KEY', // 🔑 Apna Web3Forms Access Key yahan dalein
-          subject: `🚗 New Car Finder Request: ${formData.firstName} ${formData.lastName}`,
-          from_name: `${formData.firstName} ${formData.lastName}`,
-          ...formData
-        })
+    const result = await sendCarFinderEmail(formData);
+    setLoading(false);
+
+    if (result.success) {
+      setStatus({
+        type: 'success',
+        msg: 'Thank you! Your Car Finder request has been submitted successfully.',
       });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setToast({
-          show: true,
-          message: 'Your Car Finder request has been sent successfully!',
-          type: 'success'
-        });
-
-        // Reset Form
-        setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          make: '',
-          model: '',
-          year: '',
-          trim: '',
-          temp_odometer: '',
-          bodyStyle: '',
-          transmission: '',
-          driveLine: '',
-          fuel_type: '',
-          condition: '',
-          vin_number: '',
-          exterior_color: '',
-          additional_info: ''
-        });
-      } else {
-        throw new Error(result.message || 'Something went wrong');
-      }
-    } catch (error: any) {
-      setToast({
-        show: true,
-        message: error.message || 'Failed to send request. Please try again.',
-        type: 'error'
+      // Reset Form
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        make: '',
+        model: '',
+        year: '',
+        trim: '',
+        temp_odometer: '',
+        bodyStyle: '',
+        transmission: '',
+        driveLine: '',
+        fuel_type: '',
+        condition: '',
+        vin_number: '',
+        exterior_color: '',
+        additional_info: ''
       });
-    } finally {
-      setSubmitting(false);
-      setTimeout(() => {
-        setToast((prev) => ({ ...prev, show: false }));
-      }, 5000);
+    } else {
+      setStatus({
+        type: 'error',
+        msg: result.error || 'Failed to submit request. Please try again.',
+      });
     }
   };
 
   return (
     <div className="relative w-full min-h-screen bg-black text-white py-10 px-4 sm:px-6 lg:px-12">
       
-      {/* 🔔 FLOATING TOAST NOTIFICATION */}
-      <AnimatePresence>
-        {toast.show && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-4 rounded-lg shadow-2xl border text-sm font-semibold ${
-              toast.type === 'success'
-                ? 'bg-black border-[#e3ba73] text-[#e3ba73]'
-                : 'bg-black border-red-500 text-red-500'
+      {/* 🌟 Top Floating Toast Banner (Matching Contact Us) */}
+      <div
+        className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md transition-all duration-500 ease-out transform ${
+          status.type
+            ? 'translate-y-0 opacity-100 scale-100'
+            : '-translate-y-12 opacity-0 scale-95 pointer-events-none'
+        }`}
+      >
+        {status.type && (
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl shadow-2xl backdrop-blur-md border ${
+              status.type === 'success'
+                ? 'bg-slate-900/95 border-emerald-500/50 text-emerald-400 shadow-emerald-950/50'
+                : 'bg-slate-900/95 border-red-500/50 text-red-400 shadow-red-950/50'
             }`}
           >
-            {toast.type === 'success' ? (
-              <FaCheckCircle className="text-xl" />
-            ) : (
-              <FaExclamationCircle className="text-xl" />
-            )}
-            <span>{toast.message}</span>
-          </motion.div>
+            <div className="flex items-center gap-3">
+              {status.type === 'success' ? (
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 animate-bounce" />
+              ) : (
+                <XCircle className="w-6 h-6 text-red-400 shrink-0" />
+              )}
+              <span className="text-sm font-medium text-white">{status.msg}</span>
+            </div>
+            
+            <button
+              onClick={() => setStatus({ type: null, msg: '' })}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -416,10 +393,10 @@ const CarFinder: React.FC = () => {
             <div>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={loading}
                 className="bg-[#e3ba73] hover:bg-[#d2a861] text-black font-bold px-8 py-2.5 rounded transition-all duration-200 shadow-md disabled:opacity-50"
               >
-                {submitting ? 'Sending Request...' : 'Submit'}
+                {loading ? 'Sending...' : 'Submit'}
               </button>
             </div>
 

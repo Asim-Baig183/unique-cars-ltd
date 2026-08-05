@@ -17,20 +17,6 @@ export const CopyrightBar: React.FC = () => {
           <a href="/privacy" className="hover:underline text-white">
             <p className="m-0 p-0 px-1">Privacy & Policy</p>
           </a>
-          <span>|</span>
-          <a
-            href="https://www.hillzdealer.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center no-underline text-white relative z-10 hover:opacity-80 transition-opacity"
-          >
-            <span className="pr-1">Powered by</span>
-            <img
-              src="/images/hillz_big_logo.png"
-              alt="Hillz Dealer"
-              className="h--5 w-5 object-contain"
-            />
-          </a>
         </div>
       </div>
     </div>

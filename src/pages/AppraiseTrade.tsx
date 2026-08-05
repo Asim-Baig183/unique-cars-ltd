@@ -1,27 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPhoneAlt, FaMapMarkerAlt, FaClock } from 'react-icons/fa';
+import { CheckCircle, XCircle, X } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-interface AppraiseFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  make: string;
-  model: string;
-  year: string;
-  trim: string;
-  temp_odometer: string;
-  bodyStyle: string;
-  transmission: string;
-  driveLine: string;
-  fuel_type: string;
-  condition: string;
-  vin_number: string;
-  exterior_color: string;
-  frk_desire_MidV_id: string;
-  additional_info: string;
-}
+import { sendAppraiseTradeEmail, type AppraiseFormData } from '../formSubmit/appraiseTradeEmailService';
 
 const AppraiseTrade: React.FC = () => {
   const [formData, setFormData] = useState<AppraiseFormData>({
@@ -45,6 +26,21 @@ const AppraiseTrade: React.FC = () => {
     additional_info: ''
   });
 
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error' | null; msg: string }>({
+    type: null,
+    msg: '',
+  });
+
+  useEffect(() => {
+    if (status.type) {
+      const timer = setTimeout(() => {
+        setStatus({ type: null, msg: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -52,16 +48,87 @@ const AppraiseTrade: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Appraise Trade Form Submitted:', formData);
+    setLoading(true);
+    setStatus({ type: null, msg: '' });
+
+    const result = await sendAppraiseTradeEmail(formData);
+    setLoading(false);
+
+    if (result.success) {
+      setStatus({
+        type: 'success',
+        msg: 'Thank you! Your Trade Appraisal request has been sent successfully.',
+      });
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        make: '',
+        model: '',
+        year: '',
+        trim: '',
+        temp_odometer: '',
+        bodyStyle: '',
+        transmission: '',
+        driveLine: '',
+        fuel_type: '',
+        condition: '',
+        vin_number: '',
+        exterior_color: '',
+        frk_desire_MidV_id: '',
+        additional_info: ''
+      });
+    } else {
+      setStatus({
+        type: 'error',
+        msg: result.error || 'Failed to submit request. Please try again.',
+      });
+    }
   };
 
   return (
-    <div className="w-full min-h-screen bg-black text-white py-10 px-4 sm:px-6 lg:px-12">
+    <div className="relative w-full min-h-screen bg-black text-white py-10 px-4 sm:px-6 lg:px-12">
+      
+      {/* Top Notification Toast Banner */}
+      <div
+        className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md transition-all duration-500 ease-out transform ${
+          status.type
+            ? 'translate-y-0 opacity-100 scale-100'
+            : '-translate-y-12 opacity-0 scale-95 pointer-events-none'
+        }`}
+      >
+        {status.type && (
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl shadow-2xl backdrop-blur-md border ${
+              status.type === 'success'
+                ? 'bg-slate-900/95 border-emerald-500/50 text-emerald-400 shadow-emerald-950/50'
+                : 'bg-slate-900/95 border-red-500/50 text-red-400 shadow-red-950/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {status.type === 'success' ? (
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 animate-bounce" />
+              ) : (
+                <XCircle className="w-6 h-6 text-red-400 shrink-0" />
+              )}
+              <span className="text-sm font-medium text-white">{status.msg}</span>
+            </div>
+            <button
+              onClick={() => setStatus({ type: null, msg: '' })}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Left Section: Form with Fade Up Animation */}
+        {/* Left Section: Form */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -332,16 +399,17 @@ const AppraiseTrade: React.FC = () => {
             <div>
               <button
                 type="submit"
-                className="bg-[#e3ba73] hover:bg-[#d2a861] text-black font-bold px-8 py-2.5 rounded transition-all duration-200 shadow-md"
+                disabled={loading}
+                className="bg-[#e3ba73] hover:bg-[#d2a861] disabled:opacity-50 text-black font-bold px-8 py-2.5 rounded transition-all duration-200 shadow-md"
               >
-                Submit
+                {loading ? 'Sending...' : 'Submit'}
               </button>
             </div>
 
           </form>
         </motion.div>
 
-        {/* Right Section: Sidebar with Slight Delay Fade Animation */}
+        {/* Right Section: Sidebar */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

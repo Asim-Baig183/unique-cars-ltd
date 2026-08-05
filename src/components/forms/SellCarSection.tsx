@@ -1,16 +1,6 @@
-import React, { useState } from 'react';
-
-export interface SellCarFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  mobile: string;
-  make: string;
-  model: string;
-  year: string;
-  vinNumber: string;
-  mileage: string;
-}
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, X } from 'lucide-react';
+import { sendSellCarEmail, type SellCarFormData } from '../../formSubmit/sellCarEmailService';
 
 const INITIAL_FORM_DATA: SellCarFormData = {
   firstName: '',
@@ -27,23 +17,45 @@ const INITIAL_FORM_DATA: SellCarFormData = {
 export const SellCarSection: React.FC = () => {
   const [formData, setFormData] = useState<SellCarFormData>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error' | null; msg: string }>({
+    type: null,
+    msg: '',
+  });
+
+  useEffect(() => {
+    if (status.type) {
+      const timer = setTimeout(() => {
+        setStatus({ type: null, msg: '' });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setStatus({ type: null, msg: '' });
 
-    console.log('Form submitted:', formData);
+    const result = await sendSellCarEmail(formData);
+    setIsSubmitting(false);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    if (result.success) {
+      setStatus({
+        type: 'success',
+        msg: 'Thank you! Your car details have been submitted successfully.',
+      });
       setFormData(INITIAL_FORM_DATA);
-      alert('Thank you! Your submission has been received.');
-    }, 1000);
+    } else {
+      setStatus({
+        type: 'error',
+        msg: result.error || 'Failed to send submission. Please try again.',
+      });
+    }
   };
 
   return (
@@ -51,6 +63,40 @@ export const SellCarSection: React.FC = () => {
       className="relative w-full bg-cover bg-center bg-no-repeat min-h-125 flex justify-between items-center py-12 px-4 sm:px-8 lg:px-20"
       style={{ backgroundImage: "url('https://uniquecars.ca/images/contactus.jpg')" }}
     >
+      {/* Top Floating Notification Toast */}
+      <div
+        className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md transition-all duration-500 ease-out transform ${
+          status.type
+            ? 'translate-y-0 opacity-100 scale-100'
+            : '-translate-y-12 opacity-0 scale-95 pointer-events-none'
+        }`}
+      >
+        {status.type && (
+          <div
+            className={`flex items-center justify-between p-4 rounded-xl shadow-2xl backdrop-blur-md border ${
+              status.type === 'success'
+                ? 'bg-slate-900/95 border-emerald-500/50 text-emerald-400 shadow-emerald-950/50'
+                : 'bg-slate-900/95 border-red-500/50 text-red-400 shadow-red-950/50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {status.type === 'success' ? (
+                <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0 animate-bounce" />
+              ) : (
+                <XCircle className="w-6 h-6 text-red-400 shrink-0" />
+              )}
+              <span className="text-sm font-medium text-white">{status.msg}</span>
+            </div>
+            <button
+              onClick={() => setStatus({ type: null, msg: '' })}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Black Overlay (30% Opacity) */}
       <div className="absolute inset-0 bg-black/40 pointer-events-none" />
 

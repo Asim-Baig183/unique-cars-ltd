@@ -37,7 +37,7 @@ export const CreditApplicationPage: React.FC = () => {
               </p>
 
               <div className="mt-4">
-                <a href="/forms/contact-us" className="inline-block">
+                <a href="/ContactUs" className="inline-block">
                   <button className="bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-semibold px-4 py-2 rounded transition-colors text-sm flex items-center justify-center">
                     Contact Us
                   </button>

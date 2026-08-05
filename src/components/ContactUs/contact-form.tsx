@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Phone, MapPin, Clock, CheckCircle, XCircle, X } from 'lucide-react';
-import { sendContactEmail,type ContactFormData } from '../../services/emailService';
+import { sendContactEmail,type ContactFormData } from '../../formSubmit/contactEmailService';
 
 export const ContactUsSection: React.FC = () => {
   // 1. Form State Management

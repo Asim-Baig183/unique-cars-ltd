@@ -92,7 +92,7 @@ export const AdvancedSearch: React.FC = () => {
 
         {/* Submit Button */}
         <div className="w-full lg:w-2/12 mt-2 lg:mt-0">
-          <a href={`/cars?${queryString}`} className="no-underline block w-full">
+          <a href={`/inventory?${queryString}`} className="no-underline block w-full">
             <button
               type="button"
               className="w-full py-2.5 px-4 bg-black hover:bg-[#E3BA73] text-[#E3BA73] hover:text-black font-semibold text-sm border transition-colors duration-300 flex items-center justify-center gap-2 rounded-sm uppercase tracking-wider cursor-pointer"

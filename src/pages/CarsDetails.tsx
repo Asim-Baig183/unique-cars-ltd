@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { sendInfoEmail } from '..//formSubmit/infoEmailService';
 import { 
   ArrowLeft, 
   ChevronLeft, 
@@ -79,7 +80,8 @@ export const CarDetails: React.FC = () => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState<boolean>(false);
   const [isCalculatorModalOpen, setIsCalculatorModalOpen] = useState<boolean>(false);
 
-  // Info Form States
+  // Info Form States & Sending State
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [infoForm, setInfoForm] = useState({
     firstName: '',
     lastName: '',
@@ -104,63 +106,58 @@ export const CarDetails: React.FC = () => {
   const [totalObligation, setTotalObligation] = useState<string>('0.00');
 
   useEffect(() => {
-  const fetchCarDetailsAndNavigation = async () => {
-    if (!id) return;
-    try {
-      setLoading(true);
-      setActiveImageIndex(0); // Nayi car aane par image reset karo
+    const fetchCarDetailsAndNavigation = async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        setActiveImageIndex(0);
 
-      // 1. Fetch current car
-      const { data: currentCar, error: carError } = await supabase
-        .from('cars')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle(); // .single() ki jagah .maybeSingle() taake app crash na ho
+        const { data: currentCar, error: carError } = await supabase
+          .from('cars')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
 
-      if (carError) {
-        console.error('Error fetching car:', carError.message);
-      }
-
-      setCar(currentCar || null);
-
-      if (currentCar?.price) {
-        setVehiclePrice(currentCar.price.toString());
-        setMsrp(currentCar.price.toLocaleString());
-      }
-
-      // 2. Fetch all car IDs for Next/Prev navigation
-      const { data: allCars, error: allCarsError } = await supabase
-        .from('cars')
-        .select('id')
-        .order('created_at', { ascending: false });
-
-      if (!allCarsError && allCars && allCars.length > 0) {
-        // ID comparison using String() to support both string UUIDs and numeric IDs
-        const currentIndex = allCars.findIndex((c) => String(c.id) === String(id));
-
-        if (currentIndex !== -1) {
-          // Loop navigation logic
-          const prevIndex = currentIndex > 0 ? currentIndex - 1 : allCars.length - 1;
-          setPrevCarId(allCars[prevIndex].id);
-
-          const nextIndex = currentIndex < allCars.length - 1 ? currentIndex + 1 : 0;
-          setNextCarId(allCars[nextIndex].id);
-        } else {
-          setPrevCarId(null);
-          setNextCarId(null);
+        if (carError) {
+          console.error('Error fetching car:', carError.message);
         }
+
+        setCar(currentCar || null);
+
+        if (currentCar?.price) {
+          setVehiclePrice(currentCar.price.toString());
+          setMsrp(currentCar.price.toLocaleString());
+        }
+
+        const { data: allCars, error: allCarsError } = await supabase
+          .from('cars')
+          .select('id')
+          .order('created_at', { ascending: false });
+
+        if (!allCarsError && allCars && allCars.length > 0) {
+          const currentIndex = allCars.findIndex((c) => String(c.id) === String(id));
+
+          if (currentIndex !== -1) {
+            const prevIndex = currentIndex > 0 ? currentIndex - 1 : allCars.length - 1;
+            setPrevCarId(allCars[prevIndex].id);
+
+            const nextIndex = currentIndex < allCars.length - 1 ? currentIndex + 1 : 0;
+            setNextCarId(allCars[nextIndex].id);
+          } else {
+            setPrevCarId(null);
+            setNextCarId(null);
+          }
+        }
+      } catch (err: any) {
+        console.error('Unexpected error:', err.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      console.error('Unexpected error:', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchCarDetailsAndNavigation();
-}, [id]); // URL parameter change hone par auto-trigger hoga
+    fetchCarDetailsAndNavigation();
+  }, [id]);
 
-  // Next / Previous Handlers
   const handlePrevCar = () => {
     if (prevCarId !== null) {
       navigate(`/car/${prevCarId}`);
@@ -173,7 +170,6 @@ export const CarDetails: React.FC = () => {
     }
   };
 
-  // Calculator Logic
   const handleCalculate = (e: React.FormEvent) => {
     e.preventDefault();
     const price = parseFloat(vehiclePrice) || 0;
@@ -208,6 +204,9 @@ export const CarDetails: React.FC = () => {
     setMsrp(price.toFixed(2));
   };
 
+  // ✉️ EMAIL SUBMISSION HANDLER
+// ... Purane functions ke baad
+
   const handleReset = () => {
     setFrequency('Monthly');
     setVehiclePrice(car?.price?.toString() || '0');
@@ -221,11 +220,58 @@ export const CarDetails: React.FC = () => {
     setTotalObligation('0.00');
   };
 
-  const handleInfoFormSubmit = (e: React.FormEvent) => {
+  // 🔴 PASTE HERE: Purane handleInfoFormSubmit ko mita kar isko yahan rakhein 🔴
+  const handleInfoFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('Thank you! Your inquiry has been submitted.');
-    setIsInfoModalOpen(false);
+    if (!car) return;
+
+    setIsSubmitting(true);
+
+    try {
+      await sendInfoEmail({
+        firstName: infoForm.firstName,
+        lastName: infoForm.lastName,
+        email: infoForm.email,
+        phone: infoForm.phone,
+        message: infoForm.message,
+        vehicleDetails: {
+          stockNumber: car.stock_number || 'N/A',
+          year: car.year,
+          make: car.make,
+          model: car.model,
+          price: car.price ? `$${car.price.toLocaleString()}` : 'N/A',
+          vin: car.vin || 'N/A',
+        },
+      });
+
+      alert('Thank you! Your inquiry has been sent successfully.');
+
+      // Reset Form & Close Modal
+      setInfoForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        message: ''
+      });
+      setIsInfoModalOpen(false);
+    } catch (error) {
+      console.error('Failed to send inquiry email:', error);
+      alert('Failed to send inquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-[#e3ba73] flex items-center justify-center font-semibold animate-pulse">
+        Loading Vehicle Details...
+      </div>
+    );
+  }
+
+  // ... Baki file ka JSX code Neeche Aayega
 
   if (loading) {
     return (
@@ -348,69 +394,68 @@ export const CarDetails: React.FC = () => {
           {/* Grid Layout: Gallery + Action Buttons */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-           {/* Gallery */}
-<div className="lg:col-span-7 space-y-4">
-  <div className="relative aspect-video w-full overflow-hidden bg-black border border-gray-800 group rounded">
-    <img
-      src={imagesList[activeImageIndex]}
-      alt={`${car.make} ${car.model}`}
-      className="w-full h-full object-cover"
-    />
+            {/* Gallery */}
+            <div className="lg:col-span-7 space-y-4">
+              <div className="relative aspect-video w-full overflow-hidden bg-black border border-gray-800 group rounded">
+                <img
+                  src={imagesList[activeImageIndex]}
+                  alt={`${car.make} ${car.model}`}
+                  className="w-full h-full object-cover"
+                />
 
-    {/* 🏷️ Condition / Status Overlay Tag */}
-    {car.condition_tag && (
-      <span
-        className={`absolute top-3 left-3 text-xs md:text-sm font-extrabold uppercase tracking-wider px-3 py-1 rounded shadow-lg z-20 ${
-          car.condition_tag.toLowerCase().includes('genuine')
-            ? 'bg-emerald-500 text-white'
-            : car.condition_tag.toLowerCase().includes('accidental')
-            ? 'bg-red-600 text-white'
-            : 'bg-[#e3ba73] text-black'
-        }`}
-      >
-        {car.condition_tag}
-      </span>
-    )}
+                {car.condition_tag && (
+                  <span
+                    className={`absolute top-3 left-3 text-xs md:text-sm font-extrabold uppercase tracking-wider px-3 py-1 rounded shadow-lg z-20 ${
+                      car.condition_tag.toLowerCase().includes('genuine')
+                        ? 'bg-emerald-500 text-white'
+                        : car.condition_tag.toLowerCase().includes('accidental')
+                        ? 'bg-red-600 text-white'
+                        : 'bg-[#e3ba73] text-black'
+                    }`}
+                  >
+                    {car.condition_tag}
+                  </span>
+                )}
 
-    {imagesList.length > 1 && (
-      <>
-        <button
-          type="button"
-          onClick={prevSlide}
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-2 hover:bg-[#e3ba73] hover:text-black transition-colors rounded z-10"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          type="button"
-          onClick={nextSlide}
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-2 hover:bg-[#e3ba73] hover:text-black transition-colors rounded z-10"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </>
-    )}
-  </div>
+                {imagesList.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={prevSlide}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-2 hover:bg-[#e3ba73] hover:text-black transition-colors rounded z-10"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={nextSlide}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white p-2 hover:bg-[#e3ba73] hover:text-black transition-colors rounded z-10"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+              </div>
 
-  {imagesList.length > 1 && (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-      {imagesList.map((img, idx) => (
-        <button
-          key={idx}
-          type="button"
-          onClick={() => setActiveImageIndex(idx)}
-          className={`relative w-20 h-14 shrink-0 border-2 transition-all rounded overflow-hidden ${
-            idx === activeImageIndex
-              ? 'border-[#e3ba73] opacity-100'
-              : 'border-transparent opacity-50 hover:opacity-80'
-          }`}
-        >
-          <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
-        </button>
-      ))}
-    </div>
-  )}
-</div>
+              {imagesList.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
+                  {imagesList.map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative w-20 h-14 shrink-0 border-2 transition-all rounded overflow-hidden ${
+                        idx === activeImageIndex
+                          ? 'border-[#e3ba73] opacity-100'
+                          : 'border-transparent opacity-50 hover:opacity-80'
+                      }`}
+                    >
+                      <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Actions */}
             <div className="lg:col-span-5 space-y-3">
@@ -640,9 +685,10 @@ export const CarDetails: React.FC = () => {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-bold py-3 rounded transition-colors text-sm uppercase tracking-wider cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-bold py-3 rounded transition-colors text-sm uppercase tracking-wider cursor-pointer disabled:opacity-50"
               >
-                Submit
+                {isSubmitting ? 'Sending Email...' : 'Submit'}
               </button>
             </div>
           </form>
