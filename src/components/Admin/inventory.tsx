@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { AdminLogin } from './AdminLogin';
-import { Trash2, PlusCircle, LogOut, Search, Loader2, Edit, XCircle } from 'lucide-react';
+import { Trash2, PlusCircle, LogOut, Search, Loader2, Edit, XCircle, CheckCircle, X } from 'lucide-react';
 
 interface Car {
   id: string;
@@ -30,7 +30,7 @@ interface Car {
   images: string[];
 }
 
-export const AddCarForm = () => {
+export const AddCarForm: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [checkingSession, setCheckingSession] = useState(true);
 
@@ -70,7 +70,9 @@ export const AddCarForm = () => {
     description: '',
   });
 
-  const [files, setFiles] = useState<FileList | null>(null);
+  // Image & Preview States inside Component
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
 
   // 1. Session Auth Monitoring
@@ -103,11 +105,38 @@ export const AddCarForm = () => {
     }
   }, [session]);
 
+  // File Select & Live Preview Generator Handler
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      
+      const updatedFiles = [...selectedFiles, ...newFiles];
+      setSelectedFiles(updatedFiles);
+
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+      setPreviews((prev) => [...prev, ...newPreviews]);
+    }
+  };
+
+  // Remove New Selected Image
+  const removeNewImage = (index: number) => {
+    URL.revokeObjectURL(previews[index]);
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove Already Uploaded Image (In Edit Mode)
+  const removeExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // 3. Reset Form Function
   const resetForm = () => {
     setEditingCarId(null);
     setExistingImages([]);
-    setFiles(null);
+    setSelectedFiles([]);
+    previews.forEach((url) => URL.revokeObjectURL(url));
+    setPreviews([]);
     setVinInput('');
     setFormData({
       make: '',
@@ -139,6 +168,8 @@ export const AddCarForm = () => {
   const handleEditClick = (car: Car) => {
     setEditingCarId(car.id);
     setExistingImages(car.images || []);
+    setSelectedFiles([]);
+    setPreviews([]);
     setFormData({
       make: car.make || '',
       model: car.model || '',
@@ -239,11 +270,11 @@ export const AddCarForm = () => {
     try {
       let imageUrls: string[] = [...existingImages];
 
-      // Upload new images if selected
-      if (files && files.length > 0) {
+      // Upload new selected files if available
+      if (selectedFiles.length > 0) {
         const uploadedUrls: string[] = [];
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
           const fileName = `${Date.now()}-${file.name}`;
           const { error } = await supabase.storage.from('car-images').upload(fileName, file);
 
@@ -260,7 +291,6 @@ export const AddCarForm = () => {
         ? formData.features.split(',').map((item) => item.trim()).filter((item) => item.length > 0)
         : formData.features;
 
-      // Safe Number Parser Helper (Prevents NaN errors)
       const parseSafeInt = (val: any, defaultVal = 0) => {
         const parsed = parseInt(val, 10);
         return isNaN(parsed) ? defaultVal : parsed;
@@ -271,7 +301,6 @@ export const AddCarForm = () => {
         return isNaN(parsed) ? defaultVal : parsed;
       };
 
-      // Clean Payload Object
       const payload = {
         make: formData.make,
         model: formData.model,
@@ -299,25 +328,20 @@ export const AddCarForm = () => {
       };
 
       if (editingCarId) {
-        // 🚀 UPDATE EXISTING CAR IN SUPABASE
         const { data: updatedData, error: dbError } = await supabase
           .from('cars')
           .update(payload)
           .eq('id', editingCarId)
           .select();
 
-        if (dbError) {
-          console.error("Supabase Update Error Details:", dbError);
-          throw dbError;
-        }
+        if (dbError) throw dbError;
 
         if (!updatedData || updatedData.length === 0) {
-          alert('⚠️ Warning: Record found nahi hua ya Row-Level Security (RLS) update ko block kar rahi hai.');
+          alert('⚠️ Warning: Record found nahi hua ya RLS block kar rahi hai.');
         } else {
           alert('✅ Car details updated successfully!');
         }
       } else {
-        // 🚀 INSERT NEW CAR
         const { error: dbError } = await supabase.from('cars').insert([payload]);
         if (dbError) throw dbError;
         alert('✅ Car successfully posted to inventory!');
@@ -496,7 +520,7 @@ export const AddCarForm = () => {
                   />
                 </div>
 
-                {/* 🏷️ CONDITION / STATUS TAG SELECTION */}
+                {/* CONDITION TAG */}
                 <div>
                   <label className="block text-xs font-semibold text-[#e3ba73] mb-1">Condition Tag (Label Badge)</label>
                   <input
@@ -694,18 +718,78 @@ export const AddCarForm = () => {
               </div>
             </div>
 
-            {/* File Upload */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1">
+            {/* File Upload & Live Preview Grid */}
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold text-gray-400">
                 {editingCarId ? 'Add More Images (Optional)' : 'Upload Car Images'}
               </label>
+              
               <input
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={(e) => setFiles(e.target.files)}
-                className="bg-gray-900 border border-gray-800 p-3 w-full rounded text-white text-sm"
+                onChange={handleFileSelect}
+                className="bg-gray-900 border border-gray-800 p-3 w-full rounded text-white text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-[#e3ba73] file:text-black hover:file:bg-[#cdaf63] cursor-pointer"
               />
+
+              {/* Already Uploaded Images (Edit Mode) */}
+              {existingImages.length > 0 && (
+                <div>
+                  <p className="text-xs text-[#e3ba73] font-semibold my-2">Existing Uploaded Images:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gray-900/40 p-3 rounded-lg border border-gray-800">
+                    {existingImages.map((src, index) => (
+                      <div key={`existing-${index}`} className="relative group rounded-md overflow-hidden border border-gray-700 bg-black aspect-video">
+                        <img src={src} alt={`Existing ${index}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute top-1.5 right-1.5 bg-red-600/80 hover:bg-red-600 text-white p-1 rounded-full shadow transition-transform hover:scale-110"
+                          title="Remove existing image"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New Selected Images Live Preview */}
+              {previews.length > 0 && (
+                <div>
+                  <p className="text-xs text-emerald-400 font-semibold my-2">New Images To Upload:</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                    {previews.map((src, index) => (
+                      <div key={`new-${index}`} className="relative group rounded-md overflow-hidden border border-gray-700 bg-black aspect-video">
+                        <img
+                          src={src}
+                          alt={`Preview ${index}`}
+                          className="w-full h-full object-cover"
+                        />
+
+                        {/* Status Tick Badge */}
+                        <div className="absolute top-1.5 left-1.5 bg-emerald-500/90 text-white p-1 rounded-full shadow backdrop-blur-sm">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        </div>
+
+                        {/* Delete Cross Button */}
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute top-1.5 right-1.5 bg-red-600/80 hover:bg-red-600 text-white p-1 rounded-full shadow transition-transform hover:scale-110"
+                          title="Remove image"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+
+                        <span className="absolute bottom-1 left-1.5 text-[10px] bg-black/70 text-gray-300 px-1.5 py-0.5 rounded">
+                          Image #{index + 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
@@ -718,7 +802,7 @@ export const AddCarForm = () => {
           </form>
         </div>
 
-        {/* Existing Inventory with Edit & Delete Actions */}
+        {/* Existing Inventory List */}
         <div className="bg-[#111111] border border-gray-800 p-6 rounded-xl shadow-xl">
           <h2 className="text-xl font-bold text-white mb-6">Manage Posted Inventory ({existingCars.length})</h2>
 
@@ -732,7 +816,6 @@ export const AddCarForm = () => {
                       alt={car.model}
                       className="w-20 h-14 object-cover rounded"
                     />
-                    {/* Badge Preview */}
                     {car.condition_tag && (
                       <span className="absolute top-1 left-1 bg-[#e3ba73] text-black text-[9px] font-extrabold px-1.5 py-0.5 rounded shadow">
                         {car.condition_tag}
@@ -752,9 +835,7 @@ export const AddCarForm = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2 self-end sm:self-center">
-                  {/* EDIT BUTTON */}
                   <button
                     onClick={() => handleEditClick(car)}
                     className="bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white p-2.5 rounded transition-colors flex items-center gap-1 text-xs font-semibold"
@@ -763,7 +844,6 @@ export const AddCarForm = () => {
                     <Edit className="w-4 h-4" /> Edit
                   </button>
 
-                  {/* DELETE BUTTON */}
                   <button
                     onClick={() => handleDelete(car.id)}
                     className="bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white p-2.5 rounded transition-colors"

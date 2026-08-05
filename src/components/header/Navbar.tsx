@@ -164,13 +164,13 @@ export const Navbar: React.FC = () => {
           </div>
           <div>
             <button
-              onClick={() => toggleDropdown('mobileFinancing')}
+              onClick={() => toggleDropdown('mobiledealership')}
               className="w-full flex justify-between items-center py-2 border-b border-gray-100"
             >
               <span>DEALERSHIP</span>
-              <FaChevronDown size={12} className={activeDropdown === 'mobileFinancing' ? 'rotate-180 transition-transform' : ''} />
+              <FaChevronDown size={12} className={activeDropdown === 'mobiledealership' ? 'rotate-180 transition-transform' : ''} />
             </button>
-            {activeDropdown === 'mobileFinancing' && (
+            {activeDropdown === 'mobiledealership' && (
               <div className="pl-4 py-2 space-y-2 bg-gray-50 text-xs">
                 <a href="/AboutUs" className="block py-1">ABOUT US</a>
                 <a href="/ContactUs" className="block py-1">CONTACT US</a>
