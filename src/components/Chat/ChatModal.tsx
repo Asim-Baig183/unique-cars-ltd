@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Paperclip, Send, Smile, Loader2 } from 'lucide-react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '../../supabaseClient'; // Adjust path if needed
 
 interface Message {
@@ -15,11 +16,15 @@ interface ChatModalProps {
   onClose: () => void;
 }
 
+// Initialize Free Gemini SDK using Environment Variable
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(apiKey);
+
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hi! Welcome to Unique Cars Ltd. How can we help you today? You can ask about our available inventory, financing, or dealership location.',
+      text: 'Hi! Welcome to Unique Cars Ltd. How can I help you today? Ask me about our live car inventory, pricing, or financing!',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       sender: 'bot',
     },
@@ -36,53 +41,53 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     }
   }, [messages, isTyping]);
 
-  // Helper: Format Time
   const getFormattedTime = () =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  // Bot Logic Engine (Fetches live DB data & answers)
-  const generateAutoReply = async (userQuery: string): Promise<string> => {
-    const query = userQuery.toLowerCase();
+  // 🧠 AI Engine Function
+  const generateAIReply = async (userQuery: string): Promise<string> => {
+    try {
+      // 1. Fetch Live DB Inventory
+      const { data: cars } = await supabase
+        .from('cars')
+        .select('year, make, model, price, mileage, body_style, condition_tag')
+        .limit(10);
 
-    // 1. Inventory Query Handling
-    if (query.includes('car') || query.includes('inventory') || query.includes('stock') || query.includes('available')) {
-      try {
-        const { data: cars, error } = await supabase
-          .from('cars')
-          .select('year, make, model, price')
-          .limit(3);
+      const inventoryText = cars && cars.length > 0 
+        ? cars.map(c => `- ${c.year} ${c.make} ${c.model}: $${c.price?.toLocaleString()} (${c.mileage?.toLocaleString()} KM, Tag: ${c.condition_tag || 'Clean'})`).join('\n')
+        : 'Currently no vehicles listed in DB.';
 
-        if (error || !cars || cars.length === 0) {
-          return "We have a wide range of certified pre-owned cars in stock! Please visit our Inventory page to browse all available models.";
-        }
+      // 2. System Context Instructions
+      const systemInstruction = `
+        You are an intelligent, friendly AI Sales Assistant for "Unique Cars Ltd" (uniquecars.ca).
+        You understand Roman Urdu, Urdu, and English seamlessly.
 
-        const carList = cars
-          .map((c) => `• ${c.year} ${c.make} ${c.model} - $${c.price?.toLocaleString()}`)
-          .join('\n');
+        Live Inventory Context:
+        ${inventoryText}
 
-        return `Here are some of our latest available vehicles:\n\n${carList}\n\nWould you like more details on a specific car?`;
-      } catch (err) {
-        return "You can view our complete live inventory directly on our website under the Inventory section!";
-      }
+        Dealership Information:
+        - Name: Unique Cars Ltd
+        - Services: Pre-Owned Certified Cars, Online Financing Approval, Trade-In Valuations, Test Drive Appointments.
+        
+        Rules:
+        - Respond in the language used by the user (Roman Urdu, English, or Urdu).
+        - Keep answers concise, natural, and helpful.
+        - If a user asks for budget options (e.g. "car under 15000"), match items from the Live Inventory Context.
+        - Encourage them to visit the showroom or apply for financing on the website.
+      `;
+
+      // 3. Call Gemini 1.5 Flash Model
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        systemInstruction: systemInstruction,
+      });
+
+      const result = await model.generateContent(userQuery);
+      return result.response.text();
+    } catch (err) {
+      console.error("Gemini AI Error:", err);
+      return "Thank you for reaching out! Our sales representative will be with you shortly. Feel free to browse our Inventory page.";
     }
-
-    // 2. Financing & Trade-in Queries
-    if (query.includes('finance') || query.includes('loan') || query.includes('trade')) {
-      return "Yes! We offer flexible financing options and trade-in valuations. You can apply for pre-approval directly through our online financing form.";
-    }
-
-    // 3. Location / Hours Queries
-    if (query.includes('location') || query.includes('address') || query.includes('where') || query.includes('time') || query.includes('open')) {
-      return "Unique Cars Ltd is located at our dealership showroom. Our team is available Monday through Saturday. Feel free to stop by for a test drive!";
-    }
-
-    // 4. Contact / Phone Queries
-    if (query.includes('contact') || query.includes('phone') || query.includes('call') || query.includes('email')) {
-      return "You can leave us a message right here, or submit a inquiry form on our contact page. Our sales representatives will reach out to you shortly!";
-    }
-
-    // Default Fallback Response
-    return "Thank you for reaching out to Unique Cars Ltd! A sales representative will review your message shortly. In the meantime, feel free to check our Inventory page for latest models and deals.";
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -101,20 +106,18 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate natural typing delay (1.2 seconds)
-    setTimeout(async () => {
-      const botResponseText = await generateAutoReply(userMsgText);
-      
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: botResponseText,
-        timestamp: getFormattedTime(),
-        sender: 'bot',
-      };
+    // Call AI Backend
+    const aiResponseText = await generateAIReply(userMsgText);
 
-      setMessages((prev) => [...prev, botMsg]);
-      setIsTyping(false);
-    }, 1200);
+    const botMsg: Message = {
+      id: (Date.now() + 1).toString(),
+      text: aiResponseText,
+      timestamp: getFormattedTime(),
+      sender: 'bot',
+    };
+
+    setMessages((prev) => [...prev, botMsg]);
+    setIsTyping(false);
   };
 
   return (
@@ -182,7 +185,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
             {isTyping && (
               <div className="flex items-center gap-2 text-xs text-gray-400 bg-[#262626] px-3 py-2 rounded-xl rounded-tl-none w-fit border border-gray-800">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-[#e3ba73]" />
-                Unique Cars Agent is typing...
+                Unique AI Assistant is thinking...
               </div>
             )}
           </section>
@@ -207,7 +210,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                     handleSendMessage(e);
                   }
                 }}
-                placeholder="Ask about inventory, location..."
+                placeholder="Ask AI about cars, price, financing..."
                 rows={1}
                 className="flex-1 bg-[#121212] text-white text-sm px-3 py-2 rounded-xl border border-gray-700 focus:outline-none focus:border-[#e3ba73] resize-none transition-colors"
               />
