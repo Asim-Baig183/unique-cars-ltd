@@ -139,10 +139,10 @@ export const Navbar: React.FC = () => {
             </button>
             {activeDropdown === 'mobileShowroom' && (
               <div className="pl-4 py-2 space-y-2 bg-gray-50 text-xs">
-                <a href="/cars" className="block py-1">ALL INVENTORY</a>
-                <a href="/cars/special" className="block py-1">FEATURED VEHICLES</a>
-                <a href="/forms/car-finder" className="block py-1">CAR FINDER</a>
-                <a href="/forms/value-your-trade" className="block py-1">APPRAISE MY TRADE</a>
+                <a href="/inventory" className="block py-1">ALL INVENTORY</a>
+                <a href="/" className="block py-1">FEATURED VEHICLES</a>
+                <a href="/CarFinderPage" className="block py-1">CAR FINDER</a>
+                <a href="/AppraiseTrade" className="block py-1">APPRAISE MY TRADE</a>
               </div>
             )}
           </div>
@@ -157,21 +157,29 @@ export const Navbar: React.FC = () => {
             </button>
             {activeDropdown === 'mobileFinancing' && (
               <div className="pl-4 py-2 space-y-2 bg-gray-50 text-xs">
-                <a href="/forms/financing/calculator" className="block py-1">FINANCING CALCULATOR</a>
-                <a href="/forms/financing" className="block py-1">FINANCING APPLICATION</a>
+                <a href="/FinanceCalculator" className="block py-1">FINANCING CALCULATOR</a>
+                <a href="/CreditApplication" className="block py-1">FINANCING APPLICATION</a>
               </div>
             )}
           </div>
-
-          <a href="/dealership" className="block py-2 border-b border-gray-100">
-            DEALERSHIP
-          </a>
-          <a href="/directions" className="block py-2 border-b border-gray-100">
-            DIRECTIONS
-          </a>
-
+          <div>
+            <button
+              onClick={() => toggleDropdown('mobileFinancing')}
+              className="w-full flex justify-between items-center py-2 border-b border-gray-100"
+            >
+              <span>DEALERSHIP</span>
+              <FaChevronDown size={12} className={activeDropdown === 'mobileFinancing' ? 'rotate-180 transition-transform' : ''} />
+            </button>
+            {activeDropdown === 'mobileFinancing' && (
+              <div className="pl-4 py-2 space-y-2 bg-gray-50 text-xs">
+                <a href="/AboutUs" className="block py-1">ABOUT US</a>
+                <a href="/ContactUs" className="block py-1">CONTACT US</a>
+                 <a href="/Directions" className="block py-2 border-b border-gray-100"> DIRECTIONS</a>
+              </div>
+            )}
+          </div>
           <a
-            href="/forms/text-us-now"
+            href="/TextUs"
             className="block text-center mt-4 py-2.5 bg-[#e3ba73] text-slate-900 rounded font-bold"
           >
             TEXT US NOW
