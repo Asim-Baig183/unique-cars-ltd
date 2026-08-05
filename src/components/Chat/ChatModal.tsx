@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Paperclip, Send, Smile, Loader2 } from 'lucide-react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from '../../supabaseClient'; // Adjust path if needed
+import { supabase } from '../../supabaseClient'; // Path apne project ke mutabiq check kar lein
 
 interface Message {
   id: string;
@@ -15,10 +14,6 @@ interface ChatModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-// Initialize Free Gemini SDK using Environment Variable
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(apiKey);
 
 export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -44,49 +39,75 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const getFormattedTime = () =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  // 🧠 AI Engine Function
+  // 🧠 Groq AI Engine Function (100% Free & Super Fast)
   const generateAIReply = async (userQuery: string): Promise<string> => {
     try {
-      // 1. Fetch Live DB Inventory
-      const { data: cars } = await supabase
-        .from('cars')
-        .select('year, make, model, price, mileage, body_style, condition_tag')
-        .limit(10);
+      const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
-      const inventoryText = cars && cars.length > 0 
-        ? cars.map(c => `- ${c.year} ${c.make} ${c.model}: $${c.price?.toLocaleString()} (${c.mileage?.toLocaleString()} KM, Tag: ${c.condition_tag || 'Clean'})`).join('\n')
-        : 'Currently no vehicles listed in DB.';
+      if (!apiKey) {
+        console.error("VITE_GROQ_API_KEY missing in environment variables.");
+        return "Groq API Key is missing in .env file.";
+      }
 
-      // 2. System Context Instructions
-      const systemInstruction = `
-        You are an intelligent, friendly AI Sales Assistant for "Unique Cars Ltd" (uniquecars.ca).
-        You understand Roman Urdu, Urdu, and English seamlessly.
+      // 1. Fetch Live DB Inventory from Supabase
+      let inventoryText = 'Currently no vehicles listed in DB.';
+      try {
+        const { data: cars, error: dbError } = await supabase
+          .from('cars')
+          .select('year, make, model, price, mileage')
+          .limit(10);
 
-        Live Inventory Context:
-        ${inventoryText}
+        if (!dbError && cars && cars.length > 0) {
+          inventoryText = cars
+            .map((c) => `- ${c.year} ${c.make} ${c.model}: $${c.price} (${c.mileage} KM)`)
+            .join('\n');
+        }
+      } catch (dbErr) {
+        console.warn("Supabase fetch warning, proceeding without DB context:", dbErr);
+      }
 
-        Dealership Information:
-        - Name: Unique Cars Ltd
-        - Services: Pre-Owned Certified Cars, Online Financing Approval, Trade-In Valuations, Test Drive Appointments.
-        
-        Rules:
-        - Respond in the language used by the user (Roman Urdu, English, or Urdu).
-        - Keep answers concise, natural, and helpful.
-        - If a user asks for budget options (e.g. "car under 15000"), match items from the Live Inventory Context.
-        - Encourage them to visit the showroom or apply for financing on the website.
-      `;
+      // 2. Direct REST Call to Groq Cloud API
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content: `You are an AI Sales Representative for "Unique Cars Ltd" (uniquecars.ca). You can seamlessly respond in English, Roman Urdu, or Urdu based on the user's input. Be polite, natural, concise, and helpful.
 
-      // 3. Call Gemini 1.5 Flash Model
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        systemInstruction: systemInstruction,
+Live Inventory Context:
+${inventoryText}
+
+Dealership Information:
+- Services: Certified Pre-owned cars, Financing, Trade-ins, Test drives.
+- Financing: Available through our online application form.`,
+            },
+            {
+              role: 'user',
+              content: userQuery,
+            },
+          ],
+          temperature: 0.7,
+        }),
       });
 
-      const result = await model.generateContent(userQuery);
-      return result.response.text();
-    } catch (err) {
-      console.error("Gemini AI Error:", err);
-      return "Thank you for reaching out! Our sales representative will be with you shortly. Feel free to browse our Inventory page.";
+      const data = await response.json();
+
+      if (data.error) {
+        console.error("Groq API Error:", data.error);
+        return `API Error: ${data.error.message || 'Unable to generate response'}`;
+      }
+
+      const replyText = data.choices?.[0]?.message?.content;
+      return replyText || "Thank you for contacting Unique Cars Ltd! Feel free to explore our inventory page.";
+    } catch (err: any) {
+      console.error("Chat Execution Error:", err);
+      return "Unable to connect to AI assistant right now. Please check browser console for details.";
     }
   };
 
@@ -168,7 +189,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
                         : 'bg-[#262626] text-gray-100 rounded-tl-none border border-gray-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap wrap-break">{msg.text}</p>
+                    <p className="whitespace-pre-wrap break-word">{msg.text}</p>
                     <span
                       className={`text-[10px] block mt-1 text-right ${
                         isUser ? 'text-gray-800' : 'text-gray-400'
