@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Paperclip, Send, Smile, Loader2 } from 'lucide-react';
-import { supabase } from '../../supabaseClient'; // Path apne project ke mutabiq check kar lein
+import { supabase } from '../../supabaseClient';
 
 interface Message {
   id: string;
@@ -19,7 +19,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hi! Welcome to Unique Cars Ltd. How can I help you today? Ask me about our live car inventory, pricing, or financing!',
+      text: 'Welcome to Unique Cars Ltd! 👋 We specialize in premium vehicle sales and rentals. Are you looking to buy a car, rent one, or just exploring options today?',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
       sender: 'bot',
     },
@@ -39,8 +39,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const getFormattedTime = () =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  // 🧠 Groq AI Engine Function (100% Free & Super Fast)
-  const generateAIReply = async (userQuery: string): Promise<string> => {
+  // 🧠 Fixed Groq AI Engine Function (Correct Memory Stack & DB Fetch)
+  const generateAIReply = async (userQuery: string, currentHistory: Message[]): Promise<string> => {
     try {
       const apiKey = import.meta.env.VITE_GROQ_API_KEY;
 
@@ -54,8 +54,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
       try {
         const { data: cars, error: dbError } = await supabase
           .from('cars')
-          .select('year, make, model, price, mileage')
-          .limit(10);
+          .select('year, make, model, price, mileage, transmission, engine')
+          .order('year', { ascending: false });
 
         if (!dbError && cars && cars.length > 0) {
           inventoryText = cars
@@ -66,7 +66,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         console.warn("Supabase fetch warning, proceeding without DB context:", dbErr);
       }
 
-      // 2. Direct REST Call to Groq Cloud API
+      // 2. Build conversation history dynamically using passed state snapshot
+      const conversationHistory = currentHistory.map((msg) => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.text,
+      }));
+
+      // 3. Direct REST Call to Groq Cloud API
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -78,21 +84,68 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           messages: [
             {
               role: 'system',
-              content: `You are an AI Sales Representative for "Unique Cars Ltd" (uniquecars.ca). You can seamlessly respond in English, Roman Urdu, or Urdu based on the user's input. Be polite, natural, concise, and helpful.
+              content: `You are a professional, friendly customer service chatbot for Unique Cars Ltd (https://uniquecarsltd.ca/). Your PRIMARY GOAL is to encourage visitors to schedule a consultation call or book an appointment.
 
-Live Inventory Context:
+=== CRITICAL LANGUAGE RULE ===
+**RESPOND ONLY IN THE LANGUAGE THE CUSTOMER USES. DO NOT TRANSLATE. DO NOT MIX LANGUAGES.**
+- If customer writes in English → respond ONLY in English
+- If customer writes in French → respond ONLY in French
+- If customer writes in Urdu → respond ONLY in Urdu
+- If customer writes in Roman Urdu → respond ONLY in Roman Urdu
+- If customer writes in Arabic → respond ONLY in Arabic
+- Do NOT append translations in other languages
+- Do NOT provide bilingual responses
+- Keep the conversation in ONE language only throughout
+
+=== LEAD CAPTURE REQUIREMENTS ===
+You MUST collect these three pieces of information (in this order):
+1. Customer Name
+2. Customer Email
+3. Customer Phone Number
+
+Ask for this information naturally within the conversation. Do NOT ask all three at once. Example flow:
+- First, understand their car need
+- Then ask: "To better assist you, may I have your name?"
+- After they respond: "What's the best email to reach you?"
+- After they respond: "And your phone number?"
+
+=== CONVERSATION FLOW ===
+1. Welcome & Understand Need: Identify if they want to buy, rent, or get information
+2. Build Rapport: Show enthusiasm about helping them find the right vehicle
+3. Collect Contact Info: Gather Name, Email, Phone progressively
+4. Schedule Appointment: Direct them to the Contact Us page (https://uniquecarsltd.ca/contact-us/) to book a consultation
+
+=== LIVE INVENTORY CONTEXT ===
 ${inventoryText}
 
-Dealership Information:
-- Services: Certified Pre-owned cars, Financing, Trade-ins, Test drives.
-- Financing: Available through our online application form.`,
+=== DEALERSHIP INFORMATION ===
+- Location: Canada
+- Services: Premium Certified Pre-owned Cars, Financing Options, Trade-ins, Test Drives, Vehicle Rentals
+- Specialties: Quality vehicles, flexible financing, fast approval process
+- Contact Page: https://uniquecarsltd.ca/contact-us/
+
+=== TONE & VOICE ===
+- Professional yet approachable
+- Enthusiastic about helping customers
+- Persistent but not pushy about scheduling
+- Natural and conversational (not robotic)
+- Confident in the value Unique Cars offers
+
+=== WHAT NOT TO DO ===
+- Do NOT translate responses into other languages
+- Do NOT provide extensive product catalogs (keep answers brief, drive scheduling)
+- Do NOT accept incomplete contact information (need all three: name, email, phone)
+- Do NOT let conversations drift away from appointment scheduling
+- Do NOT respond with robotic or overly formal language
+- Do NOT use emojis excessively (1-2 max per message)`,
             },
+            ...conversationHistory,
             {
               role: 'user',
               content: userQuery,
             },
           ],
-          temperature: 0.7,
+          temperature: 0.4,
         }),
       });
 
@@ -104,7 +157,7 @@ Dealership Information:
       }
 
       const replyText = data.choices?.[0]?.message?.content;
-      return replyText || "Thank you for contacting Unique Cars Ltd! Feel free to explore our inventory page.";
+      return replyText || "Thank you for contacting Unique Cars Ltd! Visit our Contact Us page to schedule your consultation call.";
     } catch (err: any) {
       console.error("Chat Execution Error:", err);
       return "Unable to connect to AI assistant right now. Please check browser console for details.";
@@ -123,12 +176,15 @@ Dealership Information:
       sender: 'user',
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    // Keep active snapshot of history
+    const updatedMessages = [...messages, userMsg];
+
+    setMessages(updatedMessages);
     setInputText('');
     setIsTyping(true);
 
-    // Call AI Backend
-    const aiResponseText = await generateAIReply(userMsgText);
+    // Call AI Backend with updated history snapshot
+    const aiResponseText = await generateAIReply(userMsgText, updatedMessages);
 
     const botMsg: Message = {
       id: (Date.now() + 1).toString(),
@@ -189,7 +245,7 @@ Dealership Information:
                         : 'bg-[#262626] text-gray-100 rounded-tl-none border border-gray-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-word">{msg.text}</p>
+                    <p className="whitespace-pre-wrap wrap-break-word">{msg.text}</p>
                     <span
                       className={`text-[10px] block mt-1 text-right ${
                         isUser ? 'text-gray-800' : 'text-gray-400'

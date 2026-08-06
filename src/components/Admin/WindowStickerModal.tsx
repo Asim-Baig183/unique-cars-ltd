@@ -41,11 +41,11 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all duration-300">
-      <div className="bg-white text-black w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden border border-gray-300 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all duration-300 print:p-0 print:bg-white print:static">
+      <div className="bg-white text-black w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-300 animate-in fade-in zoom-in duration-200 print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none">
         
         {/* Top Header Action Bar (Screen Only - Hidden when Printing) */}
-        <div className="flex items-center justify-between px-6 py-3 bg-gray-100 border-b border-gray-300 print:hidden">
+        <div className="flex items-center justify-between px-6 py-3 bg-gray-100 border-b border-gray-300 shrink-0 print:hidden">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold bg-blue-600 text-white px-2 py-0.5 rounded">BETA</span>
             <button
@@ -63,8 +63,8 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
           </button>
         </div>
 
-        {/* 📄 PRINTABLE STICKER SHEET AREA */}
-        <div className="p-6 md:p-8 space-y-6 bg-white print:p-0">
+        {/* 📄 PRINTABLE STICKER SHEET AREA (Scrollable on Screen, Fully Expanded for Print) */}
+        <div className="p-6 md:p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar flex-1 print:p-0 print:overflow-visible">
           
           {/* Logo & Main Title Bar */}
           <div className="flex items-center justify-between border-b border-gray-200 pb-4">
@@ -82,9 +82,6 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
                 {car.body_style} {car.transmission}
               </p>
             </div>
-
-            {/* Dynamic Auto QR Code */}
-            
           </div>
 
           {/* Big Price Section */}
