@@ -39,7 +39,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
   const getFormattedTime = () =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  // 🧠 Fixed Groq AI Engine Function (Correct Memory Stack & DB Fetch)
+  // 🧠 Groq AI Engine Function with Navbar & Navigation Prompting
   const generateAIReply = async (userQuery: string, currentHistory: Message[]): Promise<string> => {
     try {
       const apiKey = import.meta.env.VITE_GROQ_API_KEY;
@@ -66,7 +66,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
         console.warn("Supabase fetch warning, proceeding without DB context:", dbErr);
       }
 
-      // 2. Build conversation history dynamically using passed state snapshot
+      // 2. Build conversation history from current active messages
       const conversationHistory = currentHistory.map((msg) => ({
         role: msg.sender === 'user' ? 'user' : 'assistant',
         content: msg.text,
@@ -84,7 +84,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
           messages: [
             {
               role: 'system',
-              content: `You are a professional, friendly customer service chatbot for Unique Cars Ltd (https://uniquecarsltd.ca/). Your PRIMARY GOAL is to encourage visitors to schedule a consultation call or book an appointment.
+              content: `You are a professional, friendly customer service chatbot for Unique Cars Ltd (https://uniquecarsltd.ca/). Your PRIMARY GOAL is to assist customers, collect contact information, and guide them across the website navigation.
+
+=== NAVIGATION & WEBSITE LINKS INSTRUCTIONS ===
+Whenever a customer asks about contacting us, financing options, inventory, or booking appointments, EXPLICITLY inform them to use the top Navbar / Header menu on our website AND provide the corresponding direct link:
+- **Contact Us / Location / Hours:** Tell them: "You can click on 'Contact Us' in the top Navbar or visit https://uniquecarsltd.ca/contact-us/"
+- **Financing / Credit Approval:** Tell them: "You can apply directly via the 'Financing' option in the top Navbar/menu or visit our financing section."
+- **Inventory / Cars for Sale:** Tell them: "Check our full collection under 'Inventory' in the top Navbar."
 
 === CRITICAL LANGUAGE RULE ===
 **RESPOND ONLY IN THE LANGUAGE THE CUSTOMER USES. DO NOT TRANSLATE. DO NOT MIX LANGUAGES.**
@@ -94,50 +100,27 @@ export const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose }) => {
 - If customer writes in Roman Urdu → respond ONLY in Roman Urdu
 - If customer writes in Arabic → respond ONLY in Arabic
 - Do NOT append translations in other languages
-- Do NOT provide bilingual responses
 - Keep the conversation in ONE language only throughout
 
-=== LEAD CAPTURE REQUIREMENTS ===
-You MUST collect these three pieces of information (in this order):
-1. Customer Name
-2. Customer Email
-3. Customer Phone Number
-
-Ask for this information naturally within the conversation. Do NOT ask all three at once. Example flow:
-- First, understand their car need
-- Then ask: "To better assist you, may I have your name?"
-- After they respond: "What's the best email to reach you?"
-- After they respond: "And your phone number?"
-
-=== CONVERSATION FLOW ===
-1. Welcome & Understand Need: Identify if they want to buy, rent, or get information
-2. Build Rapport: Show enthusiasm about helping them find the right vehicle
-3. Collect Contact Info: Gather Name, Email, Phone progressively
-4. Schedule Appointment: Direct them to the Contact Us page (https://uniquecarsltd.ca/contact-us/) to book a consultation
+=== STRICT LEAD CAPTURE FLOW ===
+1. Welcome & Understand Need: Identify if they want to buy, rent, or get information.
+2. Collect Name: Ask for their name naturally.
+3. Collect Email: Ask for their email.
+4. Collect Phone: Ask for their phone number.
+5. Redirect & Guide: Once details are collected, guide them to the Contact Us link and top Navbar.
 
 === LIVE INVENTORY CONTEXT ===
 ${inventoryText}
 
 === DEALERSHIP INFORMATION ===
-- Location: Canada
-- Services: Premium Certified Pre-owned Cars, Financing Options, Trade-ins, Test Drives, Vehicle Rentals
-- Specialties: Quality vehicles, flexible financing, fast approval process
+- Website: https://uniquecarsltd.ca/
 - Contact Page: https://uniquecarsltd.ca/contact-us/
+- Location: Canada
+- Services: Certified Pre-owned Sales, Rentals, Financing, Trade-ins
 
-=== TONE & VOICE ===
-- Professional yet approachable
-- Enthusiastic about helping customers
-- Persistent but not pushy about scheduling
-- Natural and conversational (not robotic)
-- Confident in the value Unique Cars offers
-
-=== WHAT NOT TO DO ===
-- Do NOT translate responses into other languages
-- Do NOT provide extensive product catalogs (keep answers brief, drive scheduling)
-- Do NOT accept incomplete contact information (need all three: name, email, phone)
-- Do NOT let conversations drift away from appointment scheduling
-- Do NOT respond with robotic or overly formal language
-- Do NOT use emojis excessively (1-2 max per message)`,
+=== TONE ===
+- Professional, concise, helpful, and action-oriented.
+- Keep responses to 2-3 sentences max.`,
             },
             ...conversationHistory,
             {
@@ -157,7 +140,7 @@ ${inventoryText}
       }
 
       const replyText = data.choices?.[0]?.message?.content;
-      return replyText || "Thank you for contacting Unique Cars Ltd! Visit our Contact Us page to schedule your consultation call.";
+      return replyText || "Thank you for contacting Unique Cars Ltd! You can visit our 'Contact Us' page in the top Navbar to schedule your consultation call.";
     } catch (err: any) {
       console.error("Chat Execution Error:", err);
       return "Unable to connect to AI assistant right now. Please check browser console for details.";
@@ -176,14 +159,13 @@ ${inventoryText}
       sender: 'user',
     };
 
-    // Keep active snapshot of history
     const updatedMessages = [...messages, userMsg];
 
     setMessages(updatedMessages);
     setInputText('');
     setIsTyping(true);
 
-    // Call AI Backend with updated history snapshot
+    // Call AI Backend with updated messages snapshot
     const aiResponseText = await generateAIReply(userMsgText, updatedMessages);
 
     const botMsg: Message = {
@@ -245,7 +227,7 @@ ${inventoryText}
                         : 'bg-[#262626] text-gray-100 rounded-tl-none border border-gray-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap wrap-break-word">{msg.text}</p>
+                    <p className="whitespace-pre-wrap break-wors">{msg.text}</p>
                     <span
                       className={`text-[10px] block mt-1 text-right ${
                         isUser ? 'text-gray-800' : 'text-gray-400'
