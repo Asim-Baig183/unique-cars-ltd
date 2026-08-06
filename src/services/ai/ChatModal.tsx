@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Loader2 } from 'lucide-react';
-import { generateAIResponse } from '../../services/ai/aiService';
+import { generateAIResponse } from './aiService';
 import {
   initializeConversationState,
   updateConversationStage,
- 
+  updateCustomerPreferences,
   updateBookingData,
+  setSelectedVehicle,
   type ChatMessage,
   type ConversationState,
-} from '../../services/ai/chatHistoryManager';
+} from './chatHistoryManager';
+
 interface Message {
   id: string;
   text: string;

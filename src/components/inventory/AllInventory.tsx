@@ -337,10 +337,10 @@ export const AllInventory: React.FC = () => {
 
                     {/* Card Actions */}
                     <div className="p-4 pt-0 grid grid-cols-2 gap-2">
-                      <Link to={`/forms/financing?selected_vehicle=${car.id}`} className="bg-[#e3ba73] text-black font-semibold text-xs text-center py-2 rounded hover:bg-white transition-colors uppercase tracking-wider">
+                      <Link to={`/CreditApplication?selected_vehicle=${car.id}`} className="bg-[#e3ba73] text-black font-semibold text-xs text-center py-2 rounded hover:bg-white transition-colors uppercase tracking-wider">
                         Financing
                       </Link>
-                      <Link to={`/forms/contact-us?selected_vehicle=${car.id}`} className="bg-black border border-gray-700 text-white font-semibold text-xs text-center py-2 rounded hover:border-[#e3ba73] hover:text-[#e3ba73] transition-colors uppercase tracking-wider">
+                      <Link to={`/ContactUs?selected_vehicle=${car.id}`} className="bg-black border border-gray-700 text-white font-semibold text-xs text-center py-2 rounded hover:border-[#e3ba73] hover:text-[#e3ba73] transition-colors uppercase tracking-wider">
                         Contact Us
                       </Link>
                     </div>

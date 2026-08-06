@@ -469,7 +469,7 @@ export const CarDetails: React.FC = () => {
               </button>
 
               <Link
-                to={`/forms/text-us-now?selected_vehicle=${car.id}`}
+                to={`/TextUs?selected_vehicle=${car.id}`}
                 className="w-full py-3 bg-black border border-[#e3ba73] text-[#e3ba73] font-semibold text-sm uppercase tracking-wider hover:bg-[#e3ba73] hover:text-black transition-colors flex items-center justify-center gap-2 rounded"
               >
                 <MessageSquare className="w-4 h-4" />
@@ -486,7 +486,7 @@ export const CarDetails: React.FC = () => {
               </button>
 
               <Link
-                to={`/forms/financing?selected_vehicle=${car.id}`}
+                to={`/CreditApplication?selected_vehicle=${car.id}`}
                 className="w-full py-3 bg-black border border-[#e3ba73] text-[#e3ba73] font-semibold text-sm uppercase tracking-wider hover:bg-[#e3ba73] hover:text-black transition-colors flex items-center justify-center gap-2 rounded"
               >
                 <DollarSign className="w-4 h-4" />
@@ -880,7 +880,7 @@ export const CarDetails: React.FC = () => {
 
             <div className="flex justify-center mt-3">
               <Link
-                to={`/forms/financing?selected_vehicle=${car.id}`}
+                to={`/CreditApplication?selected_vehicle=${car.id}`}
                 className="w-full sm:w-auto text-center bg-[#e3ba73] hover:bg-[#cdaf63] text-black font-bold px-6 py-2 rounded transition-colors text-sm uppercase tracking-wider"
               >
                 Apply For Financing
