@@ -41,51 +41,59 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
 
   if (!car) return null;
 
-  // 📄 1. Download as PDF Function
+  // 📄 1. Download as PDF
   const handleDownloadPDF = async () => {
     if (!stickerRef.current) return;
     setIsDownloading(true);
 
     try {
       const canvas = await html2canvas(stickerRef.current, {
-        scale: 2, // High resolution image
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: true,
         backgroundColor: '#ffffff',
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${car.year}_${car.make}_${car.model}_Sticker.pdf`);
     } catch (err) {
-      console.error('Failed to generate PDF', err);
+      console.error('PDF Generation Error:', err);
+      alert('PDF generate karne mein error aaya. Please dobara try karein.');
     } finally {
       setIsDownloading(false);
     }
   };
 
-  // 🖼️ 2. Download as JPG Function
+  // 🖼️ 2. Download as JPG
   const handleDownloadJPG = async () => {
     if (!stickerRef.current) return;
     setIsDownloading(true);
 
     try {
       const canvas = await html2canvas(stickerRef.current, {
-        scale: 2, // High resolution image
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
+        logging: true,
         backgroundColor: '#ffffff',
       });
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const link = document.createElement('a');
-      link.href = imgData;
       link.download = `${car.year}_${car.make}_${car.model}_Sticker.jpg`;
+      link.href = imgData;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
-      console.error('Failed to generate JPG', err);
+      console.error('JPG Generation Error:', err);
+      alert('JPG generate karne mein error aaya. Please dobara try karein.');
     } finally {
       setIsDownloading(false);
     }
@@ -95,7 +103,7 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all duration-300">
       <div className="bg-white text-black w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-300 animate-in fade-in zoom-in duration-200">
         
-        {/* Top Header Action Bar with PDF & JPG Download Buttons */}
+        {/* Header Action Bar */}
         <div className="flex items-center justify-between px-6 py-3 bg-gray-100 border-b border-gray-300 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold bg-blue-600 text-white px-2 py-0.5 rounded">WINDOW STICKER</span>
@@ -104,7 +112,7 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
             <button
               onClick={handleDownloadPDF}
               disabled={isDownloading}
-              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded shadow transition-colors"
+              className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded shadow transition-colors cursor-pointer"
             >
               {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />} 
               Download PDF
@@ -114,7 +122,7 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
             <button
               onClick={handleDownloadJPG}
               disabled={isDownloading}
-              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded shadow transition-colors"
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold px-3 py-1.5 rounded shadow transition-colors cursor-pointer"
             >
               {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />} 
               Download JPG
@@ -129,7 +137,7 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
           </button>
         </div>
 
-        {/* 📄 STICKER SHEET AREA (Captured by html2canvas) */}
+        {/* 📄 STICKER SHEET AREA */}
         <div className="p-6 md:p-8 space-y-6 bg-white overflow-y-auto custom-scrollbar flex-1">
           <div ref={stickerRef} className="p-6 bg-white space-y-6 border border-gray-200 rounded-lg">
             
