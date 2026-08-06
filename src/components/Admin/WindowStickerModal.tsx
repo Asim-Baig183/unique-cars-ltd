@@ -42,33 +42,50 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
 
   return (
     <>
-      {/* 🖨️ PRINT ONLY STYLES (Hides everything else on the site during print) */}
+      {/* 🖨️ STRICT SINGLE-PAGE PRINT ISOLATION */}
       <style>{`
         @media print {
-          /* Hide all body elements by default */
+          /* 1. Lock background html & body to prevent extra page generation */
+          html, body {
+            height: 100vh !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          /* 2. Hide everything else visually */
           body * {
             visibility: hidden !important;
           }
-          /* Show ONLY the sticker element and its children */
-          #printable-window-sticker, #printable-window-sticker * {
+
+          /* 3. Make ONLY sticker container and its children visible */
+          #printable-window-sticker,
+          #printable-window-sticker * {
             visibility: visible !important;
           }
-          /* Position sticker cleanly at top-left of the page */
+
+          /* 4. Position sticker as full single page at top-left */
           #printable-window-sticker {
-            position: absolute !important;
-            left: 0 !important;
+            position: fixed !important;
             top: 0 !important;
-            width: 100% !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
             margin: 0 !important;
-            padding: 20px !important;
+            padding: 24px !important;
+            background: white !important;
+            z-index: 999999 !important;
             box-shadow: none !important;
             border: none !important;
-            max-height: none !important;
-            overflow: visible !important;
+            overflow: hidden !important;
           }
-          /* Remove page margins / headers / footers imposed by browser */
+
+          /* 5. Force 1-Page Portrait Paper output */
           @page {
-            size: auto;
+            size: A4 portrait;
             margin: 0mm;
           }
         }
@@ -77,7 +94,7 @@ export const WindowStickerModal: React.FC<WindowStickerModalProps> = ({ car, onC
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-all duration-300 print:p-0 print:bg-white print:static">
         <div 
           id="printable-window-sticker" 
-          className="bg-white text-black w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-300 animate-in fade-in zoom-in duration-200 print:max-h-none print:overflow-visible print:border-none print:shadow-none print:rounded-none"
+          className="bg-white text-black w-full max-w-2xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-300 animate-in fade-in zoom-in duration-200 print:max-h-none print:border-none print:shadow-none print:rounded-none"
         >
           
           {/* Top Header Action Bar (Screen Only - Hidden when Printing) */}
